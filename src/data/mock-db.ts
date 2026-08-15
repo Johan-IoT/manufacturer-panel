@@ -241,9 +241,9 @@ const statuses: Device["DeviceStatus"][] = [
 ];
 
 export const devices: Device[] = Array.from({ length: 28 }, (_, i) => {
-  const type = deviceTypes[i % deviceTypes.length];
+  const type = deviceTypes[i % deviceTypes.length]!;
   const profile = bleProfiles.find((p) => p.DeviceTypeId === type.id)!;
-  const status = statuses[i % statuses.length];
+  const status = statuses[i % statuses.length]!;
   const serial = `GSM-${type.TypeCode.split("-")[1]}-${String(100241 + i * 7)}`;
   return {
     SerialNumber: serial,
@@ -290,11 +290,11 @@ const linkOf = (
 export const deviceUserLinks: DeviceUserLink[] = devices.flatMap((d, i) => {
   const rows: DeviceUserLink[] = [linkOf(`l-${i}-m`, d.SerialNumber, "u-001", "Manufacturer", true, 120 - i)];
   if (d.DeviceStatus !== "Manufactured") {
-    const installer = ["u-002", "u-003", "u-004"][i % 3];
+    const installer = ["u-002", "u-003", "u-004"][i % 3]!;
     rows.push(linkOf(`l-${i}-i`, d.SerialNumber, installer, "Installer", i % 7 !== 3, 90 - i));
   }
   if (["Claimed", "Active", "Suspended"].includes(d.DeviceStatus)) {
-    const owner = ["u-005", "u-007", "u-008"][i % 3];
+    const owner = ["u-005", "u-007", "u-008"][i % 3]!;
     rows.push(linkOf(`l-${i}-o`, d.SerialNumber, owner, "Owner", true, 60 - (i % 40)));
     if (i % 4 === 0) rows.push(linkOf(`l-${i}-s`, d.SerialNumber, "u-006", "Shared", true, 20));
   }
@@ -356,7 +356,7 @@ export const supportThreads: SupportThread[] = [
     Subject: "Gateway drops BLE link during configuration",
     Status: "Open",
     OpenedByUserId: "u-002",
-    LinkedDeviceSerialNumber: devices[0].SerialNumber,
+    LinkedDeviceSerialNumber: devices[0]!.SerialNumber,
     CreatedAt: iso(4, 11),
     LastMessageAt: iso(1, 16),
   },
@@ -365,7 +365,7 @@ export const supportThreads: SupportThread[] = [
     Subject: "Cannot claim device — claim not allowed",
     Status: "In Progress",
     OpenedByUserId: "u-005",
-    LinkedDeviceSerialNumber: devices[2].SerialNumber,
+    LinkedDeviceSerialNumber: devices[2]!.SerialNumber,
     CreatedAt: iso(9, 10),
     LastMessageAt: iso(2, 9),
   },
