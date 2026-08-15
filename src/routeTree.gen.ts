@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as DeviceTypesIndexRouteImport } from './routes/device-types.index'
 import { Route as DevicesIndexRouteImport } from './routes/devices.index'
 import { Route as DevicesSerialRouteImport } from './routes/devices.$serial'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeviceTypesIndexRoute = DeviceTypesIndexRouteImport.update({
+  id: '/device-types/',
+  path: '/device-types/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevicesIndexRoute = DevicesIndexRouteImport.update({
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/devices/$serial': typeof DevicesSerialRoute
+  '/device-types/': typeof DeviceTypesIndexRoute
   '/devices/': typeof DevicesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/devices/$serial': typeof DevicesSerialRoute
+  '/device-types': typeof DeviceTypesIndexRoute
   '/devices': typeof DevicesIndexRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,29 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/devices/$serial': typeof DevicesSerialRoute
+  '/device-types/': typeof DeviceTypesIndexRoute
   '/devices/': typeof DevicesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/devices/$serial' | '/devices/'
+  fullPaths:
+    '/' | '/login' | '/devices/$serial' | '/device-types/' | '/devices/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/devices/$serial' | '/devices'
-  id: '__root__' | '/' | '/login' | '/devices/$serial' | '/devices/'
+  to: '/' | '/login' | '/devices/$serial' | '/device-types' | '/devices'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/devices/$serial'
+    | '/device-types/'
+    | '/devices/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   DevicesSerialRoute: typeof DevicesSerialRoute
+  DeviceTypesIndexRoute: typeof DeviceTypesIndexRoute
   DevicesIndexRoute: typeof DevicesIndexRoute
 }
 
@@ -83,6 +100,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/device-types/': {
+      id: '/device-types/'
+      path: '/device-types'
+      fullPath: '/device-types/'
+      preLoaderRoute: typeof DeviceTypesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/devices/': {
@@ -106,6 +130,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   DevicesSerialRoute: DevicesSerialRoute,
+  DeviceTypesIndexRoute: DeviceTypesIndexRoute,
   DevicesIndexRoute: DevicesIndexRoute,
 }
 export const routeTree = rootRouteImport
