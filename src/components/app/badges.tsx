@@ -21,9 +21,9 @@ export function Pill({
   dot = false,
 }: {
   children: React.ReactNode;
-  tone?: Tone;
-  className?: string;
-  dot?: boolean;
+  tone?: Tone | undefined;
+  className?: string | undefined;
+  dot?: boolean | undefined;
 }) {
   return (
     <span
