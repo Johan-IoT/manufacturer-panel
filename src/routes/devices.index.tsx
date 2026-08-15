@@ -157,7 +157,7 @@ function DevicesPage() {
                 Open device
               </DropdownMenuItem>
               {permissions.canDeactivateDevice && d.Active && (
-                <DropdownMenuItem variant="destructive" onSelect={() => setToDeactivate(d)}>
+                <DropdownMenuItem className="text-destructive" onSelect={() => setToDeactivate(d)}>
                   <Ban className="size-4" /> Deactivate device
                 </DropdownMenuItem>
               )}
