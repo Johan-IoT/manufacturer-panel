@@ -10,7 +10,6 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportError } from "../lib/-error-reporting";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -40,7 +39,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
-    reportError(error, { boundary: "tanstack_root_error_component" });
+    console.error(error);
   }, [error]);
 
   return (
