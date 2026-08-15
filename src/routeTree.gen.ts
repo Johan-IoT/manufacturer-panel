@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DevicesIndexRouteImport } from './routes/devices.index'
+import { Route as DevicesSerialRouteImport } from './routes/devices.$serial'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,34 +29,43 @@ const DevicesIndexRoute = DevicesIndexRouteImport.update({
   path: '/devices/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevicesSerialRoute = DevicesSerialRouteImport.update({
+  id: '/devices/$serial',
+  path: '/devices/$serial',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/devices/$serial': typeof DevicesSerialRoute
   '/devices/': typeof DevicesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/devices/$serial': typeof DevicesSerialRoute
   '/devices': typeof DevicesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/devices/$serial': typeof DevicesSerialRoute
   '/devices/': typeof DevicesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/devices/'
+  fullPaths: '/' | '/login' | '/devices/$serial' | '/devices/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/devices'
-  id: '__root__' | '/' | '/login' | '/devices/'
+  to: '/' | '/login' | '/devices/$serial' | '/devices'
+  id: '__root__' | '/' | '/login' | '/devices/$serial' | '/devices/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  DevicesSerialRoute: typeof DevicesSerialRoute
   DevicesIndexRoute: typeof DevicesIndexRoute
 }
 
@@ -82,12 +92,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevicesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/devices/$serial': {
+      id: '/devices/$serial'
+      path: '/devices/$serial'
+      fullPath: '/devices/$serial'
+      preLoaderRoute: typeof DevicesSerialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  DevicesSerialRoute: DevicesSerialRoute,
   DevicesIndexRoute: DevicesIndexRoute,
 }
 export const routeTree = rootRouteImport
