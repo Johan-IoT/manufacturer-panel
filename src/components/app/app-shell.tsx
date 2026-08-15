@@ -107,7 +107,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const onSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!search.trim()) return;
-    navigate({ to: "/devices", search: { q: search.trim() } });
+    navigate({ to: "/devices" });
     setSearch("");
   };
 
