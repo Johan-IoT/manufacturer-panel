@@ -39,11 +39,7 @@ function DeviceTypesPage() {
 
   return (
     <AppShell>
-      <PageHeader
-        title="Device Types"
-        description="Each device type has exactly one active BLE profile. Deactivate rather than delete to preserve history."
-        breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Device Types" }]}
-      />
+      <PageHeader title="Device Types" breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Device Types" }]} />
       <DataTable
         data={query.data}
         columns={columns}
@@ -72,7 +68,6 @@ function DeviceTypesPage() {
         ]}
         onRowClick={(t) => navigate({ to: "/device-types/$typeId", params: { typeId: t.id } })}
         emptyTitle="No device types"
-        emptyDescription="Device types defined in the backend will appear here."
       />
     </AppShell>
   );

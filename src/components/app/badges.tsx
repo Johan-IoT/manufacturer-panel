@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { humanCategory } from "@/lib/format";
+import { iconTone, permissionIconTone } from "@/lib/icon-colors";
 import { Eye, Settings2, Radio, Share2, Check, X } from "lucide-react";
 import type { AccountStatus, DeviceStatus as DeviceStatusType, LinkType, UserRole } from "@/types/entities";
 
@@ -7,11 +8,11 @@ type Tone = "neutral" | "success" | "warning" | "danger" | "info" | "primary";
 
 const toneClass: Record<Tone, string> = {
   neutral: "bg-muted text-muted-foreground border-border",
-  success: "bg-success/12 text-success border-success/30",
-  warning: "bg-warning/12 text-warning border-warning/30",
-  danger: "bg-destructive/12 text-destructive border-destructive/30",
-  info: "bg-info/12 text-info border-info/30",
-  primary: "bg-primary/12 text-primary border-primary/30",
+  success: "bg-[var(--tone-success-bg)] text-[var(--tone-success-fg)] border-[var(--tone-success-border)]",
+  warning: "bg-[var(--tone-warning-bg)] text-[var(--tone-warning-fg)] border-[var(--tone-warning-border)]",
+  danger: "bg-[var(--tone-danger-bg)] text-[var(--tone-danger-fg)] border-[var(--tone-danger-border)]",
+  info: "bg-[var(--tone-info-bg)] text-[var(--tone-info-fg)] border-[var(--tone-info-border)]",
+  primary: "bg-[var(--tone-primary-bg)] text-[var(--tone-primary-fg)] border-[var(--tone-primary-border)]",
 };
 
 export function Pill({
@@ -130,7 +131,7 @@ export function DeliveryStatusBadge({ status }: { status: string }) {
 export function ReadStateBadge({ isRead }: { isRead: boolean }) {
   return (
     <Pill tone={isRead ? "neutral" : "primary"}>
-      {isRead ? <Check className="size-3" /> : <span className="size-1.5 rounded-full bg-current" />}
+      {isRead ? <Check className={cn("size-3", iconTone.success)} /> : <span className="size-1.5 rounded-full bg-current" />}
       {isRead ? "Read" : "Unread"}
     </Pill>
   );
@@ -160,12 +161,12 @@ export function PermissionBadge({ permission, granted }: { permission: Permissio
       title={`${label}: ${granted ? "granted" : "not granted"}`}
       className={cn(
         "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
-        granted ? "border-primary/30 bg-primary/10 text-primary" : "border-border bg-muted/40 text-muted-foreground/60",
+        granted ? "border-[var(--tone-primary-border)] bg-[var(--tone-primary-bg)] text-[var(--tone-primary-fg)]" : "border-border bg-muted text-muted-foreground",
       )}
     >
-      <Icon className="size-3" />
+      <Icon className={cn("size-3", granted ? permissionIconTone[permission] : iconTone.muted)} />
       {label}
-      {!granted && <X className="size-2.5" />}
+      {!granted && <X className={cn("size-2.5", iconTone.danger)} />}
     </span>
   );
 }

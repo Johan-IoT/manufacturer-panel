@@ -113,7 +113,7 @@ export function BleProfileEditor({
           <Button type="button" variant="outline" onClick={() => setForm(profile)} disabled={saving}>
             Reset
           </Button>
-          <Button type="submit" disabled={!parsed.success || saving}>
+          <Button type="submit" disabled={!parsed.success || saving} variant="success">
             {saving ? "Saving…" : "Save BLE profile"}
           </Button>
         </div>

@@ -5,7 +5,9 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { Pill } from "@/components/app/badges";
-import { EmptyState, ErrorState, LoadingState } from "@/components/app/states";
+import { EmptyState } from "@/components/app/states";
+import { AnimatedContent, AnimatedStagger, AsyncPageContent } from "@/components/app/page-layout";
+import { ConfirmationDialog } from "@/components/app/dialogs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supportService, userService } from "@/services";
@@ -30,6 +32,7 @@ function SupportPage() {
   const queryClient = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [reply, setReply] = useState("");
+  const [confirmReply, setConfirmReply] = useState(false);
 
   const threads = useQuery({ queryKey: ["support"], queryFn: () => supportService.listThreads() });
   const users = useQuery({ queryKey: ["users"], queryFn: () => userService.list() });
@@ -49,6 +52,7 @@ function SupportPage() {
     mutationFn: () => supportService.reply(selectedId!, session!.user.id, reply.trim()),
     onSuccess: () => {
       toast.success("Reply sent successfully.");
+      setConfirmReply(false);
       setReply("");
       void queryClient.invalidateQueries({ queryKey: ["support", selectedId] });
     },
@@ -59,75 +63,93 @@ function SupportPage() {
     <AppShell>
       <PageHeader
         title="Support"
-        description="Threads raised from the mobile app. Replies are written manually by the manufacturer team."
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Support" }]}
       />
 
-      {threads.isLoading ? (
-        <LoadingState label="Loading support threads" />
-      ) : threads.isError ? (
-        <ErrorState onRetry={() => void threads.refetch()} />
-      ) : (threads.data ?? []).length === 0 ? (
-        <EmptyState title="No support threads" description="Support requests from app users will appear here." />
-      ) : (
-        <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-          <div className="space-y-2">
-            {(threads.data ?? []).map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setActiveId(t.id)}
-                className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                  t.id === selectedId ? "border-primary/60 bg-surface" : "border-border bg-surface/60 hover:bg-surface"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-medium">{t.Subject}</span>
-                  <Pill tone={t.Status === "Open" ? "warning" : t.Status === "Resolved" ? "success" : "neutral"}>{t.Status}</Pill>
-                </div>
-                <p className="mt-1 truncate text-xs text-muted-foreground">
-                  {userName(t.OpenedByUserId)} · {formatDateTime(t.LastMessageAt)}
-                </p>
-              </button>
-            ))}
-          </div>
-
-          <section className="rounded-lg border border-border bg-surface p-4 shadow-panel">
-            {detail.isLoading || !detail.data ? (
-              <LoadingState label="Loading thread" />
-            ) : (
-              <>
-                <h2 className="text-sm font-semibold">{detail.data.thread.Subject}</h2>
-                <div className="mt-4 space-y-3">
-                  {detail.data.messages.map((m) => (
-                    <div key={m.id} className="rounded-md border border-border/70 bg-background p-3">
-                      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                        <span>{userName(m.AuthorUserId)}</span>
-                        <span className="font-mono">{formatDateTime(m.SentAt)}</span>
-                      </div>
-                      <p className="mt-2 text-sm">{m.Body}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 space-y-2">
-                  <Textarea
-                    rows={3}
-                    className="bg-background"
-                    placeholder="Write a reply…"
-                    value={reply}
-                    onChange={(e) => setReply(e.target.value)}
-                    maxLength={1000}
-                  />
-                  <div className="flex justify-end">
-                    <Button disabled={!reply.trim() || send.isPending} onClick={() => send.mutate()}>
-                      {send.isPending ? "Sending…" : "Send reply"}
-                    </Button>
+      <AsyncPageContent
+        isLoading={threads.isLoading}
+        isError={threads.isError}
+        onRetry={() => void threads.refetch()}
+        loadingLabel="Loading support threads"
+      >
+        {(threads.data ?? []).length === 0 ? (
+          <EmptyState title="No support threads" />
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+            <AnimatedStagger className="space-y-2">
+              {(threads.data ?? []).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveId(t.id)}
+                  className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                    t.id === selectedId ? "border-primary bg-surface" : "border-border bg-surface hover:bg-accent"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-medium">{t.Subject}</span>
+                    <Pill tone={t.Status === "Open" ? "warning" : t.Status === "Resolved" ? "success" : "neutral"}>{t.Status}</Pill>
                   </div>
-                </div>
-              </>
-            )}
-          </section>
-        </div>
-      )}
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                    {userName(t.OpenedByUserId)} · {formatDateTime(t.LastMessageAt)}
+                  </p>
+                </button>
+              ))}
+            </AnimatedStagger>
+
+            <section className="rounded-lg border border-border bg-surface p-4 shadow-none">
+              <AsyncPageContent
+                isLoading={detail.isPending}
+                isError={detail.isError}
+                onRetry={() => void detail.refetch()}
+                loadingLabel="Loading thread"
+                shellClassName="border-0 bg-transparent"
+              >
+                {() => (
+                  <AnimatedContent>
+                    <h2 className="text-sm font-semibold">{detail.data!.thread.Subject}</h2>
+                    <div className="mt-4 space-y-3">
+                      {detail.data!.messages.map((m) => (
+                        <div key={m.id} className="rounded-md border border-border/70 bg-background p-3">
+                          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                            <span>{userName(m.AuthorUserId)}</span>
+                            <span className="font-mono">{formatDateTime(m.SentAt)}</span>
+                          </div>
+                          <p className="mt-2 text-sm">{m.Body}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      <Textarea
+                        rows={3}
+                        className="bg-background"
+                        placeholder="Write a reply…"
+                        value={reply}
+                        onChange={(e) => setReply(e.target.value)}
+                        maxLength={1000}
+                      />
+                      <div className="flex justify-end">
+                        <Button disabled={!reply.trim() || send.isPending} onClick={() => setConfirmReply(true)}>
+                          {send.isPending ? "Sending…" : "Send reply"}
+                        </Button>
+                      </div>
+                    </div>
+                  </AnimatedContent>
+                )}
+              </AsyncPageContent>
+            </section>
+          </div>
+        )}
+      </AsyncPageContent>
+
+      <ConfirmationDialog
+        open={confirmReply}
+        onOpenChange={setConfirmReply}
+        title="Send support reply?"
+        description="Your reply will be sent to the user in this thread."
+        confirmLabel="Send reply"
+        loading={send.isPending}
+        onConfirm={() => send.mutate()}
+      />
     </AppShell>
   );
 }

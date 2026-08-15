@@ -10,7 +10,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { iconTone } from "@/lib/icon-colors";
 import { EmptyState, ErrorState, LoadingState, NoResultsState } from "./states";
+import { AnimatedContent } from "./page-layout";
 
 export interface Column<T> {
   key: string;
@@ -39,7 +41,7 @@ export function SearchInput({
 }) {
   return (
     <div className="relative w-full sm:w-72">
-      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      <Search className={cn("pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2", iconTone.muted)} />
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -99,7 +101,6 @@ interface DataTableProps<T> {
   onRowClick?: ((row: T) => void) | undefined;
   rowActions?: ((row: T) => ReactNode) | undefined;
   emptyTitle?: string | undefined;
-  emptyDescription?: string | undefined;
   toolbarExtra?: ReactNode | undefined;
   pageSize?: number | undefined;
 }
@@ -118,7 +119,6 @@ export function DataTable<T>({
   onRowClick,
   rowActions,
   emptyTitle,
-  emptyDescription,
   toolbarExtra,
   pageSize = 10,
 }: DataTableProps<T>) {
@@ -163,7 +163,7 @@ export function DataTable<T>({
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-panel">
+    <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-none">
       <TableToolbar>
         {searchFields?.length ? (
           <SearchInput
@@ -196,16 +196,25 @@ export function DataTable<T>({
       </TableToolbar>
 
       {isLoading ? (
-        <LoadingState />
+        <div className="animate-content-enter">
+          <LoadingState />
+        </div>
       ) : isError ? (
-        <ErrorState description={errorMessage ?? undefined} onRetry={onRetry} />
+        <div className="animate-content-enter">
+          <ErrorState title={errorMessage ?? "Unable to load"} onRetry={onRetry} />
+        </div>
       ) : (data ?? []).length === 0 ? (
-        <EmptyState title={emptyTitle ?? undefined} description={emptyDescription ?? undefined} />
+        <div className="animate-content-enter">
+          <EmptyState title={emptyTitle ?? "Nothing here yet"} />
+        </div>
       ) : filtered.length === 0 ? (
-        <NoResultsState onClear={clearAll} />
+        <div className="animate-content-enter">
+          <NoResultsState onClear={clearAll} />
+        </div>
       ) : (
-        <div className="w-full overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
+        <AnimatedContent>
+          <div className="w-full overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
             <thead className="sticky top-0 z-10 bg-surface-raised">
               <tr className="border-b border-border">
                 {columns.map((c) => (
@@ -232,12 +241,12 @@ export function DataTable<T>({
                         {c.header}
                         {sort?.key === c.key ? (
                           sort.dir === "asc" ? (
-                            <ArrowUp className="size-3" />
+                            <ArrowUp className={cn("size-3", iconTone.primary)} />
                           ) : (
-                            <ArrowDown className="size-3" />
+                            <ArrowDown className={cn("size-3", iconTone.primary)} />
                           )
                         ) : (
-                          <ChevronsUpDown className="size-3 opacity-50" />
+                          <ChevronsUpDown className={cn("size-3", iconTone.muted)} />
                         )}
                       </button>
                     ) : (
@@ -249,14 +258,15 @@ export function DataTable<T>({
               </tr>
             </thead>
             <tbody>
-              {paged.map((row) => (
+              {paged.map((row, index) => (
                 <tr
                   key={rowKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   className={cn(
-                    "border-b border-border/60 transition-colors last:border-0",
+                    "animate-row-enter border-b border-border/60 transition-colors last:border-0",
                     onRowClick && "cursor-pointer hover:bg-accent/40",
                   )}
+                  style={{ animationDelay: `${Math.min(index * 60, 480)}ms` }}
                 >
                   {columns.map((c) => (
                     <td key={c.key} className={cn("px-4 py-3 align-middle", c.className)}>
@@ -273,6 +283,7 @@ export function DataTable<T>({
             </tbody>
           </table>
         </div>
+        </AnimatedContent>
       )}
 
       {!isLoading && !isError && filtered.length > 0 && (
@@ -282,13 +293,13 @@ export function DataTable<T>({
           </span>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={current <= 1} onClick={() => setPage(current - 1)}>
-              <ChevronLeft className="size-3.5" /> Previous
+              <ChevronLeft className={cn("size-3.5", iconTone.primary)} /> Previous
             </Button>
             <span className="tabular-nums">
               Page {current} / {totalPages}
             </span>
             <Button variant="outline" size="sm" disabled={current >= totalPages} onClick={() => setPage(current + 1)}>
-              Next <ChevronRight className="size-3.5" />
+              Next <ChevronRight className={cn("size-3.5", iconTone.primary)} />
             </Button>
           </div>
         </div>

@@ -6,8 +6,9 @@ import { z } from "zod";
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { Pill } from "@/components/app/badges";
-import { EmptyState, ErrorState, LoadingState } from "@/components/app/states";
-import { FormModal } from "@/components/app/dialogs";
+import { EmptyState } from "@/components/app/states";
+import { AnimatedStagger, AsyncPageContent } from "@/components/app/page-layout";
+import { FormModal, ConfirmationDialog } from "@/components/app/dialogs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ const schema = z.object({
 function NotificationsPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [confirmSend, setConfirmSend] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
 
@@ -52,6 +54,7 @@ function NotificationsPage() {
       }),
     onSuccess: () => {
       toast.success("Notification sent successfully.");
+      setConfirmSend(false);
       setOpen(false);
       setTitle("");
       setBody("");
@@ -64,40 +67,37 @@ function NotificationsPage() {
     <AppShell>
       <PageHeader
         title="Notifications"
-        description="Messages delivered to app users through the companion mobile app."
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Notifications" }]}
         actions={<Button onClick={() => setOpen(true)}>New notification</Button>}
       />
 
-      {list.isLoading ? (
-        <LoadingState label="Loading notifications" />
-      ) : list.isError ? (
-        <ErrorState onRetry={() => void list.refetch()} />
-      ) : (list.data ?? []).length === 0 ? (
-        <EmptyState title="No notifications yet" description="Send your first notification to app users." />
-      ) : (
-        <div className="space-y-3">
-          {(list.data ?? []).map((row) => (
-            <article key={row.userNotification.id} className="rounded-lg border border-border bg-surface p-4 shadow-panel">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold">{row.notification.Title}</h2>
-                <div className="flex items-center gap-2">
-                  <Pill tone="info">{row.notification.NotificationType}</Pill>
-                  <span className="font-mono text-xs text-muted-foreground">{formatDateTime(row.notification.CreatedAt)}</span>
-                </div>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">{row.notification.Body}</p>
-            </article>
-          ))}
-        </div>
-      )}
-
-      <FormModal
-        open={open}
-        onOpenChange={setOpen}
-        title="Send notification"
-        description="This message is delivered to every active app user."
+      <AsyncPageContent
+        isLoading={list.isLoading}
+        isError={list.isError}
+        onRetry={() => void list.refetch()}
+        loadingLabel="Loading notifications"
       >
+        {(list.data ?? []).length === 0 ? (
+          <EmptyState title="No notifications yet" />
+        ) : (
+          <AnimatedStagger className="space-y-3">
+            {(list.data ?? []).map((row) => (
+              <article key={row.userNotification.id} className="rounded-lg border border-border bg-surface p-4 shadow-none">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="text-sm font-semibold">{row.notification.Title}</h2>
+                  <div className="flex items-center gap-2">
+                    <Pill tone="info">{row.notification.NotificationType}</Pill>
+                    <span className="font-mono text-xs text-muted-foreground">{formatDateTime(row.notification.CreatedAt)}</span>
+                  </div>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{row.notification.Body}</p>
+              </article>
+            ))}
+          </AnimatedStagger>
+        )}
+      </AsyncPageContent>
+
+      <FormModal open={open} onOpenChange={setOpen} title="Send notification">
         <div className="space-y-1.5">
           <Label htmlFor="n-title">Title</Label>
           <Input id="n-title" className="bg-background" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />
@@ -110,11 +110,21 @@ function NotificationsPage() {
           <Button variant="outline" onClick={() => setOpen(false)} disabled={send.isPending}>
             Cancel
           </Button>
-          <Button onClick={() => send.mutate()} disabled={!parsed.success || send.isPending}>
+          <Button onClick={() => setConfirmSend(true)} disabled={!parsed.success || send.isPending} variant="success">
             {send.isPending ? "Sending…" : "Send notification"}
           </Button>
         </div>
       </FormModal>
+
+      <ConfirmationDialog
+        open={confirmSend}
+        onOpenChange={setConfirmSend}
+        title="Send notification?"
+        description={`This will send "${title.trim()}" to all app users. This action cannot be undone.`}
+        confirmLabel="Send notification"
+        loading={send.isPending}
+        onConfirm={() => send.mutate()}
+      />
     </AppShell>
   );
 }

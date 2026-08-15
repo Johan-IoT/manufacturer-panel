@@ -35,11 +35,7 @@ function UsersPage() {
 
   return (
     <AppShell>
-      <PageHeader
-        title="App Users"
-        description="Authoritative account records used by the companion mobile app."
-        breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "App Users" }]}
-      />
+      <PageHeader title="App Users" breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "App Users" }]} />
       <DataTable
         data={query.data}
         columns={columns}
@@ -63,7 +59,6 @@ function UsersPage() {
         ]}
         onRowClick={(u) => navigate({ to: "/users/$userId", params: { userId: u.id } })}
         emptyTitle="No users"
-        emptyDescription="User accounts will appear here."
       />
     </AppShell>
   );

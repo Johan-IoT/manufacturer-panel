@@ -338,11 +338,18 @@ export interface DashboardSummary {
   totalDevices: number;
   activeDevices: number;
   deviceTypes: number;
+  totalDeviceTypes: number;
   installers: number;
+  totalUsers: number;
   activeRelationships: number;
+  totalRelationships: number;
   openSupportThreads: number;
+  totalSupportThreads: number;
   pendingNotifications: number;
+  totalNotifications: number;
   statusBreakdown: { status: string; count: number }[];
+  devicesByType: { typeCode: string; typeName: string; count: number }[];
+  registrationTrend: { label: string; count: number }[];
   recentRegistrations: { serial: string; name: string; at: string }[];
   recentClaims: { serial: string; user: string; at: string }[];
   recentRelationshipChanges: { serial: string; user: string; linkType: string; action: string; at: string }[];
@@ -362,15 +369,60 @@ export const dashboardService = {
       }, {}),
     ).map(([status, count]) => ({ status, count }));
 
+    const devicesByType = store.deviceTypes
+      .map((type) => ({
+        typeCode: type.TypeCode,
+        typeName: type.TypeName,
+        count: store.devices.filter((d) => d.DeviceTypeId === type.id).length,
+      }))
+      .filter((entry) => entry.count > 0)
+      .sort((a, b) => b.count - a.count);
+
+    const localDayKey = (value: string | Date) => {
+      const day = value instanceof Date ? value : new Date(value);
+      return [
+        day.getFullYear(),
+        String(day.getMonth() + 1).padStart(2, "0"),
+        String(day.getDate()).padStart(2, "0"),
+      ].join("-");
+    };
+
+    const registrationsByDay = new Map<string, number>();
+    for (const device of store.devices) {
+      if (!device.RegisteredAt) continue;
+      const day = localDayKey(device.RegisteredAt);
+      registrationsByDay.set(day, (registrationsByDay.get(day) ?? 0) + 1);
+    }
+
+    const trendDays = 14;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const registrationTrend = Array.from({ length: trendDays }, (_, index) => {
+      const day = new Date(today);
+      day.setDate(today.getDate() - (trendDays - 1 - index));
+      const key = localDayKey(day);
+      return {
+        label: day.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }),
+        count: registrationsByDay.get(key) ?? 0,
+      };
+    });
+
     return {
       totalDevices: store.devices.length,
       activeDevices: store.devices.filter((d) => d.DeviceStatus === "Active").length,
       deviceTypes: store.deviceTypes.filter((t) => t.Active).length,
+      totalDeviceTypes: store.deviceTypes.length,
       installers: store.users.filter((u) => u.UserRole === "Installer").length,
+      totalUsers: store.users.length,
       activeRelationships: store.links.filter((l) => l.Active).length,
+      totalRelationships: store.links.length,
       openSupportThreads: store.threads.filter((t) => t.Status === "Open" || t.Status === "In Progress").length,
+      totalSupportThreads: store.threads.length,
       pendingNotifications: store.userNotifications.filter((n) => !n.IsRead).length,
+      totalNotifications: store.userNotifications.length,
       statusBreakdown,
+      devicesByType,
+      registrationTrend,
       recentRegistrations: store.devices
         .filter((d) => d.RegisteredAt)
         .sort((a, b) => (b.RegisteredAt ?? "").localeCompare(a.RegisteredAt ?? ""))

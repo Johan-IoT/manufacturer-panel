@@ -1,11 +1,13 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { ActiveBadge, CategoryBadge, DeviceTypeBadge } from "@/components/app/badges";
 import { BleProfileEditor } from "@/components/app/ble-profile-editor";
-import { ErrorState, LoadingState } from "@/components/app/states";
+import { ConfirmationDialog } from "@/components/app/dialogs";
+import { AsyncPageContent } from "@/components/app/page-layout";
 import { bleProfileService, deviceTypeService } from "@/services";
 import { toUserMessage } from "@/services/client";
 import { usePermissions } from "@/lib/auth";
@@ -26,6 +28,7 @@ function DeviceTypeDetailPage() {
   const { typeId } = useParams({ from: "/device-types/$typeId" });
   const permissions = usePermissions();
   const queryClient = useQueryClient();
+  const [pendingPatch, setPendingPatch] = useState<Record<string, unknown> | null>(null);
 
   const typeQuery = useQuery({ queryKey: ["device-type", typeId], queryFn: () => deviceTypeService.get(typeId) });
   const profileQuery = useQuery({ queryKey: ["ble-profile", typeId], queryFn: () => bleProfileService.getForDeviceType(typeId) });
@@ -34,58 +37,72 @@ function DeviceTypeDetailPage() {
     mutationFn: (patch: Record<string, unknown>) => bleProfileService.update(profileQuery.data!.id, patch),
     onSuccess: () => {
       toast.success("BLE profile saved successfully.");
+      setPendingPatch(null);
       void queryClient.invalidateQueries({ queryKey: ["ble-profile", typeId] });
     },
     onError: (e) => toast.error(toUserMessage(e, "Unable to save the BLE profile. Please try again.")),
   });
 
-  if (typeQuery.isLoading) {
-    return (
-      <AppShell>
-        <LoadingState label="Loading device type" />
-      </AppShell>
-    );
-  }
-  if (typeQuery.isError || !typeQuery.data) {
-    return (
-      <AppShell>
-        <ErrorState description="This device type could not be loaded." onRetry={() => void typeQuery.refetch()} />
-      </AppShell>
-    );
-  }
-
-  const type = typeQuery.data;
-
   return (
     <AppShell>
-      <PageHeader
-        title={type.TypeName}
-        description={`Hardware ${type.HardwareVersion} · RSSI minimum ${type.RssiConnectMinimum} dBm`}
-        breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Device Types", to: "/device-types" }, { label: type.TypeCode }]}
-        meta={
+      <AsyncPageContent
+        isLoading={typeQuery.isLoading}
+        isError={typeQuery.isError || !typeQuery.data}
+        onRetry={() => void typeQuery.refetch()}
+        loadingLabel="Loading device type"
+        errorTitle="Unable to load device type"
+      >
+        {typeQuery.data && (
           <>
-            <DeviceTypeBadge code={type.TypeCode} />
-            <CategoryBadge category={type.DeviceCategory} />
-            <ActiveBadge active={type.Active} />
-          </>
-        }
-      />
+            <PageHeader
+              title={typeQuery.data.TypeName}
+              breadcrumbs={[
+                { label: "Manufacturer Panel", to: "/" },
+                { label: "Device Types", to: "/device-types" },
+                { label: typeQuery.data.TypeCode },
+              ]}
+              meta={
+                <>
+                  <DeviceTypeBadge code={typeQuery.data.TypeCode} />
+                  <CategoryBadge category={typeQuery.data.DeviceCategory} />
+                  <ActiveBadge active={typeQuery.data.Active} />
+                </>
+              }
+            />
 
-      <section className="rounded-lg border border-border bg-surface p-4 shadow-panel">
-        <h2 className="mb-4 text-sm font-semibold">BLE profile</h2>
-        {profileQuery.isLoading ? (
-          <LoadingState label="Loading BLE profile" />
-        ) : profileQuery.isError || !profileQuery.data ? (
-          <ErrorState description="No BLE profile could be loaded for this device type." onRetry={() => void profileQuery.refetch()} />
-        ) : (
-          <BleProfileEditor
-            profile={profileQuery.data}
-            canEdit={permissions.canEditBleProfile}
-            saving={save.isPending}
-            onSave={(patch) => save.mutate(patch)}
-          />
+            <section className="rounded-lg border border-border bg-surface p-4 shadow-none">
+              <h2 className="mb-4 text-sm font-semibold">BLE profile</h2>
+              <AsyncPageContent
+                isLoading={profileQuery.isLoading}
+                isError={profileQuery.isError || !profileQuery.data}
+                onRetry={() => void profileQuery.refetch()}
+                loadingLabel="Loading BLE profile"
+                errorTitle="Unable to load BLE profile"
+                shellClassName="border-0 bg-transparent"
+              >
+                {profileQuery.data && (
+                  <BleProfileEditor
+                    profile={profileQuery.data}
+                    canEdit={permissions.canEditBleProfile}
+                    saving={save.isPending}
+                    onSave={(patch) => setPendingPatch(patch)}
+                  />
+                )}
+              </AsyncPageContent>
+            </section>
+
+            <ConfirmationDialog
+              open={!!pendingPatch}
+              onOpenChange={(v) => !v && setPendingPatch(null)}
+              title="Save BLE profile changes?"
+              description="Updated connection rules apply to all devices of this type on their next connection."
+              confirmLabel="Save changes"
+              loading={save.isPending}
+              onConfirm={() => pendingPatch && save.mutate(pendingPatch)}
+            />
+          </>
         )}
-      </section>
+      </AsyncPageContent>
     </AppShell>
   );
 }

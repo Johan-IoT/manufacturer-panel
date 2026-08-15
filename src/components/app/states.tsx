@@ -2,12 +2,13 @@ import { AlertTriangle, Inbox, Loader2, RefreshCw, SearchX, ShieldAlert } from "
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { iconTone } from "@/lib/icon-colors";
 
 export function LoadingState({ rows = 6, label = "Loading data" }: { rows?: number | undefined; label?: string | undefined }) {
   return (
     <div className="space-y-3 p-6" role="status" aria-live="polite">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" />
+        <Loader2 className={cn("size-4 animate-spin", iconTone.primary)} />
         {label}
       </div>
       {Array.from({ length: rows }).map((_, i) => (
@@ -20,13 +21,11 @@ export function LoadingState({ rows = 6, label = "Loading data" }: { rows?: numb
 function Shell({
   icon,
   title,
-  description,
   action,
   tone = "muted",
 }: {
   icon: React.ReactNode;
   title: string;
-  description: string;
   action?: React.ReactNode | undefined;
   tone?: "muted" | "danger" | undefined;
 }) {
@@ -35,13 +34,14 @@ function Shell({
       <div
         className={cn(
           "flex size-11 items-center justify-center rounded-lg border",
-          tone === "danger" ? "border-destructive/30 bg-destructive/10 text-destructive" : "border-border bg-surface-raised text-muted-foreground",
+          tone === "danger"
+            ? "border-[var(--tone-danger-border)] bg-[var(--tone-danger-bg)] text-destructive"
+            : "border-border bg-surface-raised text-muted-foreground",
         )}
       >
         {icon}
       </div>
       <h3 className="text-base font-semibold text-foreground">{title}</h3>
-      <p className="max-w-md text-sm text-muted-foreground">{description}</p>
       {action}
     </div>
   );
@@ -49,22 +49,19 @@ function Shell({
 
 export function EmptyState({
   title = "Nothing here yet",
-  description = "There is no data to display for this view.",
   action,
 }: {
   title?: string | undefined;
-  description?: string | undefined;
   action?: React.ReactNode | undefined;
 }) {
-  return <Shell icon={<Inbox className="size-5" />} title={title} description={description} action={action} />;
+  return <Shell icon={<Inbox className={cn("size-5", iconTone.muted)} />} title={title} action={action} />;
 }
 
 export function NoResultsState({ onClear }: { onClear?: (() => void) | undefined }) {
   return (
     <Shell
-      icon={<SearchX className="size-5" />}
+      icon={<SearchX className={cn("size-5", iconTone.warning)} />}
       title="No matching results"
-      description="No records match your current search and filters. Try adjusting them."
       action={
         onClear ? (
           <Button variant="outline" size="sm" onClick={onClear}>
@@ -77,22 +74,21 @@ export function NoResultsState({ onClear }: { onClear?: (() => void) | undefined
 }
 
 export function ErrorState({
-  description = "Something went wrong while loading this data. Please try again.",
+  title = "Unable to load",
   onRetry,
 }: {
-  description?: string | undefined;
+  title?: string | undefined;
   onRetry?: (() => void) | undefined;
 }) {
   return (
     <Shell
       tone="danger"
-      icon={<AlertTriangle className="size-5" />}
-      title="Unable to load"
-      description={description}
+      icon={<AlertTriangle className={cn("size-5", iconTone.danger)} />}
+      title={title}
       action={
         onRetry ? (
           <Button variant="outline" size="sm" onClick={onRetry}>
-            <RefreshCw className="size-3.5" /> Try again
+            <RefreshCw className={cn("size-3.5", iconTone.primary)} /> Try again
           </Button>
         ) : undefined
       }
@@ -104,9 +100,8 @@ export function UnauthorizedState() {
   return (
     <Shell
       tone="danger"
-      icon={<ShieldAlert className="size-5" />}
+      icon={<ShieldAlert className={cn("size-5", iconTone.danger)} />}
       title="Access restricted"
-      description="You do not have permission to view this area of the Manufacturer Panel."
     />
   );
 }

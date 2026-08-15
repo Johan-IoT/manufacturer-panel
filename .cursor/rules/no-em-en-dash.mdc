@@ -1,0 +1,45 @@
+---
+description: Do not use em dashes or en dashes anywhere in this project
+alwaysApply: true
+---
+
+# No em dash or en dash
+
+Do not use em dashes (U+2014) or en dashes (U+2013) anywhere in this project.
+
+This applies to:
+
+- User-facing copy (UI labels, titles, messages, placeholders)
+- Code comments and docstrings
+- README and documentation
+- SEO/meta titles and descriptions
+- Commit messages and PR text when working in this repo
+
+## Use instead
+
+| Instead of | Use |
+|------------|-----|
+| Em dash in titles | Pipe or hyphen: `Page \| App` or `Page - App` |
+| Em dash in prose | Comma, colon, or hyphen: `foo: bar` or `foo - bar` |
+| En dash in ranges | Hyphen or words: `1-10` or `1 to 10` |
+| Em dash as empty placeholder | `N/A`, `-`, or `None` |
+
+Regular ASCII hyphen-minus (`-`, U+002D) is allowed.
+
+## Examples
+
+```text
+// BAD (uses U+2014 em dash)
+Sign in [em dash] Manufacturer Panel
+// Server state is authoritative [em dash] mock data for now
+
+// BAD (uses U+2013 en dash)
+Showing 1[en dash]10 of 50
+
+// GOOD
+Sign in | Manufacturer Panel
+Showing 1-10 of 50
+// Server state is authoritative; mock data for now
+```
+
+When editing existing text, replace em/en dashes rather than introducing new ones.

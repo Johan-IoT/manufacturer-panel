@@ -4,7 +4,8 @@ import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { Pill } from "@/components/app/badges";
 import { RelationshipCard } from "@/components/app/cards";
-import { EmptyState, ErrorState, LoadingState } from "@/components/app/states";
+import { EmptyState } from "@/components/app/states";
+import { AnimatedStagger, AsyncPageContent } from "@/components/app/page-layout";
 import { relationshipService, userService } from "@/services";
 
 export const Route = createFileRoute("/users/$userId")({
@@ -24,53 +25,55 @@ function UserDetailPage() {
   const userQuery = useQuery({ queryKey: ["user", userId], queryFn: () => userService.get(userId) });
   const linksQuery = useQuery({ queryKey: ["links", "user", userId], queryFn: () => relationshipService.listForUser(userId) });
 
-  if (userQuery.isLoading) {
-    return (
-      <AppShell>
-        <LoadingState label="Loading user" />
-      </AppShell>
-    );
-  }
-  if (userQuery.isError || !userQuery.data) {
-    return (
-      <AppShell>
-        <ErrorState description="This user could not be loaded." onRetry={() => void userQuery.refetch()} />
-      </AppShell>
-    );
-  }
-
-  const user = userQuery.data;
-
   return (
     <AppShell>
-      <PageHeader
-        title={`${user.FirstName} ${user.LastName}`}
-        description="Account record and linked devices."
-        breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "App Users", to: "/users" }, { label: user.FirstName }]}
-        meta={
+      <AsyncPageContent
+        isLoading={userQuery.isLoading}
+        isError={userQuery.isError || !userQuery.data}
+        onRetry={() => void userQuery.refetch()}
+        loadingLabel="Loading user"
+        errorTitle="Unable to load user"
+      >
+        {userQuery.data && (
           <>
-            <Pill tone="info">{user.UserRole}</Pill>
-            <Pill tone={user.AccountStatus === "Active" ? "success" : "warning"}>{user.AccountStatus}</Pill>
-          </>
-        }
-      />
+            <PageHeader
+              title={`${userQuery.data.FirstName} ${userQuery.data.LastName}`}
+              breadcrumbs={[
+                { label: "Manufacturer Panel", to: "/" },
+                { label: "App Users", to: "/users" },
+                { label: userQuery.data.FirstName },
+              ]}
+              meta={
+                <>
+                  <Pill tone="info">{userQuery.data.UserRole}</Pill>
+                  <Pill tone={userQuery.data.AccountStatus === "Active" ? "success" : "warning"}>{userQuery.data.AccountStatus}</Pill>
+                </>
+              }
+            />
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold">Device relationships</h2>
-        {linksQuery.isLoading ? (
-          <LoadingState label="Loading relationships" />
-        ) : linksQuery.isError ? (
-          <ErrorState onRetry={() => void linksQuery.refetch()} />
-        ) : (linksQuery.data ?? []).length === 0 ? (
-          <EmptyState title="No devices linked" description="This user has no device relationships yet." />
-        ) : (
-          <div className="grid gap-3 xl:grid-cols-2">
-            {(linksQuery.data ?? []).map((link) => (
-              <RelationshipCard key={link.id} link={link} title={link.DeviceSerialNumber} subtitle={link.LinkType} />
-            ))}
-          </div>
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold">Device relationships</h2>
+              <AsyncPageContent
+                isLoading={linksQuery.isLoading}
+                isError={linksQuery.isError}
+                onRetry={() => void linksQuery.refetch()}
+                loadingLabel="Loading relationships"
+                shellClassName="border-0 bg-transparent"
+              >
+                {(linksQuery.data ?? []).length === 0 ? (
+                  <EmptyState title="No devices linked" />
+                ) : (
+                  <AnimatedStagger className="grid gap-3 xl:grid-cols-2">
+                    {(linksQuery.data ?? []).map((link) => (
+                      <RelationshipCard key={link.id} link={link} title={link.DeviceSerialNumber} subtitle={link.LinkType} />
+                    ))}
+                  </AnimatedStagger>
+                )}
+              </AsyncPageContent>
+            </section>
+          </>
         )}
-      </section>
+      </AsyncPageContent>
     </AppShell>
   );
 }

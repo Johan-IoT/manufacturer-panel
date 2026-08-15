@@ -6,12 +6,15 @@ import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { RelationshipCard } from "@/components/app/cards";
 import { ConfirmationDialog } from "@/components/app/dialogs";
-import { EmptyState, ErrorState, LoadingState } from "@/components/app/states";
+import { EmptyState } from "@/components/app/states";
+import { AnimatedStagger, AsyncPageContent } from "@/components/app/page-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { relationshipService, userService } from "@/services";
 import { toUserMessage } from "@/services/client";
 import { usePermissions } from "@/lib/auth";
+import { revokeAccessCopy } from "@/lib/action-copy";
+import type { DeviceUserLink } from "@/types/entities";
 
 export const Route = createFileRoute("/relationships")({
   head: () => ({
@@ -29,19 +32,19 @@ function RelationshipsPage() {
   const permissions = usePermissions();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [revokeId, setRevokeId] = useState<string | null>(null);
+  const [revokeLink, setRevokeLink] = useState<DeviceUserLink | null>(null);
 
   const links = useQuery({ queryKey: ["links"], queryFn: () => relationshipService.list() });
   const users = useQuery({ queryKey: ["users"], queryFn: () => userService.list() });
 
   const revoke = useMutation({
-    mutationFn: (id: string) => relationshipService.revoke(id),
-    onSuccess: () => {
-      toast.success("Access revoked successfully.");
-      setRevokeId(null);
+    mutationFn: (link: DeviceUserLink) => relationshipService.revoke(link.id),
+    onSuccess: (_data, link) => {
+      toast.success(revokeAccessCopy(link, userName(link.AppUserId), link.DeviceSerialNumber).successToast);
+      setRevokeLink(null);
       void queryClient.invalidateQueries({ queryKey: ["links"] });
     },
-    onError: (e) => toast.error(toUserMessage(e, "Unable to update access. Please try again.")),
+    onError: (e) => toast.error(toUserMessage(e, "Unable to revoke access. Please try again.")),
   });
 
   const userName = (id: string) => {
@@ -58,50 +61,56 @@ function RelationshipsPage() {
     <AppShell>
       <PageHeader
         title="Relationships"
-        description="Every link between a device and a user. Revoking preserves history — relationships are never deleted."
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Relationships" }]}
       />
       <Input
         placeholder="Search by serial number or user"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm bg-surface"
+        className="mb-4 max-w-sm bg-surface"
       />
-      {links.isLoading ? (
-        <LoadingState label="Loading relationships" />
-      ) : links.isError ? (
-        <ErrorState onRetry={() => void links.refetch()} />
-      ) : rows.length === 0 ? (
-        <EmptyState title="No relationships found" description="Try a different search term." />
-      ) : (
-        <div className="grid gap-3 xl:grid-cols-2">
-          {rows.map((link) => (
-            <RelationshipCard
-              key={link.id}
-              link={link}
-              title={userName(link.AppUserId)}
-              subtitle={link.DeviceSerialNumber}
-              action={
-                permissions.canManageRelationships && link.Active ? (
-                  <Button variant="outline" size="sm" onClick={() => setRevokeId(link.id)}>
-                    Revoke access
-                  </Button>
-                ) : undefined
-              }
-            />
-          ))}
-        </div>
-      )}
+      <AsyncPageContent
+        isLoading={links.isLoading}
+        isError={links.isError}
+        onRetry={() => void links.refetch()}
+        loadingLabel="Loading relationships"
+      >
+        {rows.length === 0 ? (
+          <EmptyState title="No relationships found" />
+        ) : (
+          <AnimatedStagger className="grid gap-3 xl:grid-cols-2">
+            {rows.map((link) => (
+              <RelationshipCard
+                key={link.id}
+                link={link}
+                title={userName(link.AppUserId)}
+                subtitle={link.DeviceSerialNumber}
+                action={
+                  permissions.canManageRelationships && link.Active ? (
+                    <Button variant="destructiveOutline" size="sm" onClick={() => setRevokeLink(link)}>
+                      Revoke access
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ))}
+          </AnimatedStagger>
+        )}
+      </AsyncPageContent>
 
       <ConfirmationDialog
-        open={!!revokeId}
-        onOpenChange={(v) => !v && setRevokeId(null)}
-        title="Revoke access?"
-        description="Are you sure you want to revoke this relationship? The record is retained and marked revoked."
-        confirmLabel="Revoke access"
+        open={!!revokeLink}
+        onOpenChange={(v) => !v && setRevokeLink(null)}
+        title={revokeLink ? revokeAccessCopy(revokeLink, userName(revokeLink.AppUserId), revokeLink.DeviceSerialNumber).title : "Revoke access?"}
+        description={
+          revokeLink
+            ? revokeAccessCopy(revokeLink, userName(revokeLink.AppUserId), revokeLink.DeviceSerialNumber).description
+            : ""
+        }
+        confirmLabel={revokeLink ? revokeAccessCopy(revokeLink, userName(revokeLink.AppUserId), revokeLink.DeviceSerialNumber).confirmLabel : "Revoke access"}
         destructive
         loading={revoke.isPending}
-        onConfirm={() => revokeId && revoke.mutate(revokeId)}
+        onConfirm={() => revokeLink && revoke.mutate(revokeLink)}
       />
     </AppShell>
   );

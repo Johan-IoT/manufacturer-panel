@@ -15,10 +15,15 @@ import type {
 } from "@/types/entities";
 
 const iso = (daysAgo: number, hour = 9) => {
-  const d = new Date(Date.UTC(2026, 6, 28, hour, 15, 0));
-  d.setUTCDate(d.getUTCDate() - daysAgo);
+  const d = new Date();
+  d.setHours(hour, 15, 0, 0);
+  d.setDate(d.getDate() - daysAgo);
   return d.toISOString();
 };
+
+const registrationDayOffsets = [
+  0, 0, 1, 1, 1, 2, 3, 4, 4, 5, 6, 7, 9, 10, 11, 12, 13, 2, 3, 5, 6, 8, 10, 12, 13, 1, 4, 7,
+];
 
 export const users: AppUser[] = [
   {
@@ -253,7 +258,7 @@ export const devices: Device[] = Array.from({ length: 28 }, (_, i) => {
     FirmwareVersion: `FW-${2 + (i % 3)}.${i % 10}.${(i * 3) % 7}`,
     HardwareVersion: type.HardwareVersion,
     ManufacturedAt: iso(200 - i * 4),
-    RegisteredAt: status === "Manufactured" ? null : iso(150 - i * 4),
+    RegisteredAt: status === "Manufactured" ? null : iso(registrationDayOffsets[i] ?? i % 14, 9 + (i % 6)),
     RegisteredByUserId: status === "Manufactured" ? null : "u-001",
     DeviceStatus: status,
     LastKnownBleName: `${profile.PublishedNamePrefix}-${serial.slice(-4)}`,

@@ -40,11 +40,7 @@ function InstallersPage() {
 
   return (
     <AppShell>
-      <PageHeader
-        title="Installers"
-        description="Installer accounts and how many devices they can currently access."
-        breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Installers" }]}
-      />
+      <PageHeader title="Installers" breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Installers" }]} />
       <DataTable
         data={installers}
         columns={columns}
@@ -56,7 +52,6 @@ function InstallersPage() {
         searchFields={[(u) => u.FirstName, (u) => u.LastName]}
         onRowClick={(u) => navigate({ to: "/users/$userId", params: { userId: u.id } })}
         emptyTitle="No installers"
-        emptyDescription="Installer accounts will appear here once created in the mobile app."
       />
     </AppShell>
   );

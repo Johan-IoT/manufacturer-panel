@@ -9,13 +9,21 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+        default:
+          "border border-primary bg-primary text-primary-foreground shadow-none hover:bg-[oklch(0.35_0.14_252)] hover:border-[oklch(0.35_0.14_252)] [&_svg]:text-primary-foreground",
+        destructive:
+          "border border-destructive bg-destructive text-destructive-foreground shadow-none hover:bg-[oklch(0.5_0.2_25)] hover:border-[oklch(0.5_0.2_25)] [&_svg]:text-destructive-foreground",
+        destructiveOutline:
+          "border border-destructive bg-[var(--tone-danger-bg)] text-destructive shadow-none hover:bg-[var(--tone-danger-bg)] hover:border-destructive [&_svg]:text-destructive",
+        success:
+          "border border-success bg-success text-success-foreground shadow-none hover:bg-[oklch(0.44_0.14_155)] hover:border-[oklch(0.44_0.14_155)] [&_svg]:text-success-foreground",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "border border-input bg-background text-foreground shadow-none hover:bg-accent hover:text-accent-foreground [&_svg]:text-foreground",
+        secondary:
+          "border border-border bg-secondary text-secondary-foreground shadow-none hover:bg-[oklch(0.9_0.012_250)] [&_svg]:text-secondary-foreground",
+        ghost:
+          "text-foreground shadow-none hover:bg-accent hover:text-accent-foreground [&_svg]:text-muted-foreground hover:[&_svg]:text-foreground",
+        link: "text-primary underline-offset-4 hover:underline [&_svg]:text-primary",
       },
       size: {
         default: "h-9 px-4 py-2",

@@ -47,7 +47,7 @@ export function ConfirmationDialog({
               e.preventDefault();
               onConfirm();
             }}
-            className={cn(destructive && "bg-destructive text-destructive-foreground hover:bg-destructive/90")}
+            className={cn(destructive && "border border-destructive bg-destructive text-destructive-foreground hover:bg-[oklch(0.5_0.2_25)]")}
           >
             {loading ? "Working…" : confirmLabel}
           </AlertDialogAction>
@@ -100,7 +100,7 @@ export function SideDrawer({
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full border-l border-border bg-surface shadow-drawer sm:max-w-lg">
+      <SheetContent side="right" className="w-full border-l border-border bg-surface shadow-none sm:max-w-lg">
         <SheetHeader className="border-b border-border">
           <SheetTitle>{title}</SheetTitle>
           {description && <SheetDescription>{description}</SheetDescription>}

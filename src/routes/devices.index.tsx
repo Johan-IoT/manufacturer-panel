@@ -19,6 +19,8 @@ import { deviceService, deviceTypeService } from "@/services";
 import { toUserMessage } from "@/services/client";
 import { DEVICE_STATUSES, type Device } from "@/types/entities";
 import { formatDate, formatDateTime, maskValue } from "@/lib/format";
+import { iconTone } from "@/lib/icon-colors";
+import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/auth";
 
 export const Route = createFileRoute("/devices/")({
@@ -97,7 +99,6 @@ function DevicesPage() {
     <AppShell>
       <PageHeader
         title="Devices"
-        description="Serial Number is the single authoritative identity for every device. BLE names and MAC addresses are diagnostic only."
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Devices" }]}
       />
 
@@ -139,17 +140,16 @@ function DevicesPage() {
         ]}
         onRowClick={(d) => navigate({ to: "/devices/$serial", params: { serial: d.SerialNumber } })}
         emptyTitle="No devices registered"
-        emptyDescription="Devices appear here once they are manufactured and registered through the backend."
         rowActions={(d) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Row actions">
-                <MoreHorizontal className="size-4" />
+                <MoreHorizontal className={cn("size-4", iconTone.muted)} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setQuickView(d)}>
-                <Eye className="size-4" /> Quick view
+                <Eye className={cn("size-4", iconTone.info)} /> Quick view
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => navigate({ to: "/devices/$serial", params: { serial: d.SerialNumber } })}
@@ -157,8 +157,8 @@ function DevicesPage() {
                 Open device
               </DropdownMenuItem>
               {permissions.canDeactivateDevice && d.Active && (
-                <DropdownMenuItem className="text-destructive" onSelect={() => setToDeactivate(d)}>
-                  <Ban className="size-4" /> Deactivate device
+                <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setToDeactivate(d)}>
+                  <Ban className={cn("size-4", iconTone.danger)} /> Deactivate device
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -170,7 +170,6 @@ function DevicesPage() {
         open={!!quickView}
         onOpenChange={(v) => !v && setQuickView(null)}
         title={quickView?.SerialNumber ?? "Device"}
-        description="Quick inspection. Open the device for relationships and full detail."
       >
         {quickView && (
           <dl className="space-y-3 py-4 text-sm">

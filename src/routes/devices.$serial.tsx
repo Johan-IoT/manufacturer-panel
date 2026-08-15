@@ -10,11 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActiveBadge, DeviceStatus, DeviceTypeBadge } from "@/components/app/badges";
 import { RelationshipCard } from "@/components/app/cards";
 import { ConfirmationDialog } from "@/components/app/dialogs";
-import { ErrorState, LoadingState, EmptyState } from "@/components/app/states";
+import { EmptyState } from "@/components/app/states";
+import { AnimatedContent, AnimatedStagger, AsyncPageContent } from "@/components/app/page-layout";
 import { bleProfileService, deviceService, deviceTypeService, relationshipService, userService } from "@/services";
 import { toUserMessage } from "@/services/client";
 import { formatDate, formatDateTime, maskValue } from "@/lib/format";
 import { usePermissions } from "@/lib/auth";
+import { revokeAccessCopy } from "@/lib/action-copy";
+import type { DeviceUserLink } from "@/types/entities";
 
 export const Route = createFileRoute("/devices/$serial")({
   head: () => ({
@@ -42,7 +45,7 @@ function DeviceDetailPage() {
   const permissions = usePermissions();
   const queryClient = useQueryClient();
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
-  const [revokeId, setRevokeId] = useState<string | null>(null);
+  const [revokeLink, setRevokeLink] = useState<DeviceUserLink | null>(null);
 
   const deviceQuery = useQuery({ queryKey: ["device", serial], queryFn: () => deviceService.get(serial) });
   const typesQuery = useQuery({ queryKey: ["device-types"], queryFn: () => deviceTypeService.list() });
@@ -69,21 +72,21 @@ function DeviceDetailPage() {
   });
 
   const revoke = useMutation({
-    mutationFn: (id: string) => relationshipService.revoke(id),
-    onSuccess: () => {
-      toast.success("Access revoked successfully.");
-      setRevokeId(null);
+    mutationFn: (link: DeviceUserLink) => relationshipService.revoke(link.id),
+    onSuccess: (_data, link) => {
+      toast.success(revokeAccessCopy(link, userName(link.AppUserId), deviceQuery.data?.SerialNumber ?? link.DeviceSerialNumber).successToast);
+      setRevokeLink(null);
       void queryClient.invalidateQueries({ queryKey: ["links", "device", serial] });
     },
-    onError: (e) => toast.error(toUserMessage(e, "Unable to update access. Please try again.")),
+    onError: (e) => toast.error(toUserMessage(e, "Unable to revoke access. Please try again.")),
   });
 
   if (deviceQuery.isLoading) {
     return (
       <AppShell>
-        <div className="rounded-lg border border-border bg-surface">
-          <LoadingState label="Loading device" />
-        </div>
+        <AsyncPageContent isLoading isError={false} loadingLabel="Loading device">
+          {null}
+        </AsyncPageContent>
       </AppShell>
     );
   }
@@ -91,9 +94,14 @@ function DeviceDetailPage() {
   if (deviceQuery.isError || !deviceQuery.data) {
     return (
       <AppShell>
-        <div className="rounded-lg border border-border bg-surface">
-          <ErrorState description="This device could not be loaded." onRetry={() => void deviceQuery.refetch()} />
-        </div>
+        <AsyncPageContent
+          isLoading={false}
+          isError
+          errorTitle="Unable to load device"
+          onRetry={() => void deviceQuery.refetch()}
+        >
+          {null}
+        </AsyncPageContent>
       </AppShell>
     );
   }
@@ -108,7 +116,6 @@ function DeviceDetailPage() {
     <AppShell>
       <PageHeader
         title={<span className="font-mono">{device.SerialNumber}</span>}
-        description={device.DeviceName}
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Devices", to: "/devices" }, { label: device.SerialNumber }]}
         meta={
           <>
@@ -119,7 +126,7 @@ function DeviceDetailPage() {
         }
         actions={
           permissions.canDeactivateDevice && device.Active ? (
-            <Button variant="outline" onClick={() => setConfirmDeactivate(true)}>
+            <Button variant="destructiveOutline" onClick={() => setConfirmDeactivate(true)}>
               <Ban className="size-4" /> Deactivate device
             </Button>
           ) : undefined
@@ -133,7 +140,7 @@ function DeviceDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 grid gap-4 xl:grid-cols-2">
-          <section className="rounded-lg border border-border bg-surface p-4 shadow-panel">
+          <section className="rounded-lg border border-border bg-surface p-4 shadow-none">
             <h2 className="mb-3 text-sm font-semibold">Hardware & firmware</h2>
             <Row label="Firmware Version" value={device.FirmwareVersion} />
             <Row label="Hardware Version" value={device.HardwareVersion} />
@@ -142,7 +149,7 @@ function DeviceDetailPage() {
             <Row label="QR Code Value" value={<span className="font-mono">{maskValue(device.QrCodeValue, 6)}</span>} />
           </section>
 
-          <section className="rounded-lg border border-border bg-surface p-4 shadow-panel">
+          <section className="rounded-lg border border-border bg-surface p-4 shadow-none">
             <h2 className="mb-3 text-sm font-semibold">BLE profile (read only)</h2>
             {profileQuery.data ? (
               <>
@@ -161,11 +168,11 @@ function DeviceDetailPage() {
                 )}
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">No BLE profile is configured for this device type.</p>
+              <EmptyState title="No BLE profile" />
             )}
           </section>
 
-          <section className="rounded-lg border border-border bg-surface p-4 shadow-panel xl:col-span-2">
+          <section className="rounded-lg border border-border bg-surface p-4 shadow-none xl:col-span-2">
             <h2 className="mb-3 text-sm font-semibold">Recent activity & diagnostics</h2>
             <Row label="Last BLE Connection" value={formatDateTime(device.LastBleConnectionAt)} />
             <Row label="Last Server Contact" value={formatDateTime(device.LastServerContactAt)} />
@@ -178,29 +185,35 @@ function DeviceDetailPage() {
         </TabsContent>
 
         <TabsContent value="relationships" className="mt-4 space-y-3">
-          {linksQuery.isLoading ? (
-            <LoadingState label="Loading relationships" />
-          ) : linksQuery.isError ? (
-            <ErrorState onRetry={() => void linksQuery.refetch()} />
-          ) : (linksQuery.data ?? []).length === 0 ? (
-            <EmptyState title="No relationships" description="No user is linked to this device yet." />
-          ) : (
-            (linksQuery.data ?? []).map((link) => (
-              <RelationshipCard
-                key={link.id}
-                link={link}
-                title={userName(link.AppUserId)}
-                subtitle={`Granted by ${userName(link.GrantedByUserId)}`}
-                action={
-                  permissions.canManageRelationships && link.Active ? (
-                    <Button variant="outline" size="sm" onClick={() => setRevokeId(link.id)}>
-                      Revoke access
-                    </Button>
-                  ) : undefined
-                }
-              />
-            ))
-          )}
+          <AsyncPageContent
+            isLoading={linksQuery.isLoading}
+            isError={linksQuery.isError}
+            onRetry={() => void linksQuery.refetch()}
+            loadingLabel="Loading relationships"
+            shellClassName="border-0 bg-transparent"
+          >
+            {(linksQuery.data ?? []).length === 0 ? (
+              <EmptyState title="No relationships" />
+            ) : (
+              <AnimatedStagger className="space-y-3">
+                {(linksQuery.data ?? []).map((link) => (
+                  <RelationshipCard
+                    key={link.id}
+                    link={link}
+                    title={userName(link.AppUserId)}
+                    subtitle={`Granted by ${userName(link.GrantedByUserId)}`}
+                    action={
+                      permissions.canManageRelationships && link.Active ? (
+                        <Button variant="destructiveOutline" size="sm" onClick={() => setRevokeLink(link)}>
+                          Revoke access
+                        </Button>
+                      ) : undefined
+                    }
+                  />
+                ))}
+              </AnimatedStagger>
+            )}
+          </AsyncPageContent>
         </TabsContent>
       </Tabs>
 
@@ -216,14 +229,26 @@ function DeviceDetailPage() {
       />
 
       <ConfirmationDialog
-        open={!!revokeId}
-        onOpenChange={(v) => !v && setRevokeId(null)}
-        title="Revoke access?"
-        description="Are you sure you want to revoke this user's access to this device? The relationship is marked revoked, never deleted."
-        confirmLabel="Revoke access"
+        open={!!revokeLink}
+        onOpenChange={(v) => !v && setRevokeLink(null)}
+        title={
+          revokeLink
+            ? revokeAccessCopy(revokeLink, userName(revokeLink.AppUserId), device.SerialNumber).title
+            : "Revoke access?"
+        }
+        description={
+          revokeLink
+            ? revokeAccessCopy(revokeLink, userName(revokeLink.AppUserId), device.SerialNumber).description
+            : ""
+        }
+        confirmLabel={
+          revokeLink
+            ? revokeAccessCopy(revokeLink, userName(revokeLink.AppUserId), device.SerialNumber).confirmLabel
+            : "Revoke access"
+        }
         destructive
         loading={revoke.isPending}
-        onConfirm={() => revokeId && revoke.mutate(revokeId)}
+        onConfirm={() => revokeLink && revoke.mutate(revokeLink)}
       />
     </AppShell>
   );
