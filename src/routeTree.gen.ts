@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InstallersRouteImport } from './routes/installers'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as RelationshipsRouteImport } from './routes/relationships'
+import { Route as SupportRouteImport } from './routes/support'
 import { Route as DeviceTypesIndexRouteImport } from './routes/device-types.index'
 import { Route as DeviceTypesTypeIdRouteImport } from './routes/device-types.$typeId'
 import { Route as DevicesIndexRouteImport } from './routes/devices.index'
@@ -35,9 +37,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RelationshipsRoute = RelationshipsRouteImport.update({
   id: '/relationships',
   path: '/relationships',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DeviceTypesIndexRoute = DeviceTypesIndexRouteImport.update({
@@ -75,7 +87,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/installers': typeof InstallersRoute
   '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
   '/relationships': typeof RelationshipsRoute
+  '/support': typeof SupportRoute
   '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
   '/devices/$serial': typeof DevicesSerialRoute
   '/users/$userId': typeof UsersUserIdRoute
@@ -87,7 +101,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/installers': typeof InstallersRoute
   '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
   '/relationships': typeof RelationshipsRoute
+  '/support': typeof SupportRoute
   '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
   '/devices/$serial': typeof DevicesSerialRoute
   '/users/$userId': typeof UsersUserIdRoute
@@ -100,7 +116,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/installers': typeof InstallersRoute
   '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
   '/relationships': typeof RelationshipsRoute
+  '/support': typeof SupportRoute
   '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
   '/devices/$serial': typeof DevicesSerialRoute
   '/users/$userId': typeof UsersUserIdRoute
@@ -114,7 +132,9 @@ export interface FileRouteTypes {
     | '/'
     | '/installers'
     | '/login'
+    | '/notifications'
     | '/relationships'
+    | '/support'
     | '/device-types/$typeId'
     | '/devices/$serial'
     | '/users/$userId'
@@ -126,7 +146,9 @@ export interface FileRouteTypes {
     | '/'
     | '/installers'
     | '/login'
+    | '/notifications'
     | '/relationships'
+    | '/support'
     | '/device-types/$typeId'
     | '/devices/$serial'
     | '/users/$userId'
@@ -138,7 +160,9 @@ export interface FileRouteTypes {
     | '/'
     | '/installers'
     | '/login'
+    | '/notifications'
     | '/relationships'
+    | '/support'
     | '/device-types/$typeId'
     | '/devices/$serial'
     | '/users/$userId'
@@ -151,7 +175,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   InstallersRoute: typeof InstallersRoute
   LoginRoute: typeof LoginRoute
+  NotificationsRoute: typeof NotificationsRoute
   RelationshipsRoute: typeof RelationshipsRoute
+  SupportRoute: typeof SupportRoute
   DeviceTypesTypeIdRoute: typeof DeviceTypesTypeIdRoute
   DevicesSerialRoute: typeof DevicesSerialRoute
   UsersUserIdRoute: typeof UsersUserIdRoute
@@ -183,11 +209,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/relationships': {
       id: '/relationships'
       path: '/relationships'
       fullPath: '/relationships'
       preLoaderRoute: typeof RelationshipsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/device-types/': {
@@ -239,7 +279,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   InstallersRoute: InstallersRoute,
   LoginRoute: LoginRoute,
+  NotificationsRoute: NotificationsRoute,
   RelationshipsRoute: RelationshipsRoute,
+  SupportRoute: SupportRoute,
   DeviceTypesTypeIdRoute: DeviceTypesTypeIdRoute,
   DevicesSerialRoute: DevicesSerialRoute,
   UsersUserIdRoute: UsersUserIdRoute,
