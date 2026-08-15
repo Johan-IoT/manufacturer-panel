@@ -10,33 +10,180 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InstallersRouteImport } from './routes/installers'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as RelationshipsRouteImport } from './routes/relationships'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as DeviceTypesIndexRouteImport } from './routes/device-types.index'
+import { Route as DeviceTypesTypeIdRouteImport } from './routes/device-types.$typeId'
+import { Route as DevicesIndexRouteImport } from './routes/devices.index'
+import { Route as DevicesSerialRouteImport } from './routes/devices.$serial'
+import { Route as UsersIndexRouteImport } from './routes/users.index'
+import { Route as UsersUserIdRouteImport } from './routes/users.$userId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InstallersRoute = InstallersRouteImport.update({
+  id: '/installers',
+  path: '/installers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RelationshipsRoute = RelationshipsRouteImport.update({
+  id: '/relationships',
+  path: '/relationships',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeviceTypesIndexRoute = DeviceTypesIndexRouteImport.update({
+  id: '/device-types/',
+  path: '/device-types/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeviceTypesTypeIdRoute = DeviceTypesTypeIdRouteImport.update({
+  id: '/device-types/$typeId',
+  path: '/device-types/$typeId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevicesIndexRoute = DevicesIndexRouteImport.update({
+  id: '/devices/',
+  path: '/devices/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevicesSerialRoute = DevicesSerialRouteImport.update({
+  id: '/devices/$serial',
+  path: '/devices/$serial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersIndexRoute = UsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersUserIdRoute = UsersUserIdRouteImport.update({
+  id: '/users/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/installers': typeof InstallersRoute
+  '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
+  '/relationships': typeof RelationshipsRoute
+  '/support': typeof SupportRoute
+  '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
+  '/devices/$serial': typeof DevicesSerialRoute
+  '/users/$userId': typeof UsersUserIdRoute
+  '/device-types/': typeof DeviceTypesIndexRoute
+  '/devices/': typeof DevicesIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/installers': typeof InstallersRoute
+  '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
+  '/relationships': typeof RelationshipsRoute
+  '/support': typeof SupportRoute
+  '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
+  '/devices/$serial': typeof DevicesSerialRoute
+  '/users/$userId': typeof UsersUserIdRoute
+  '/device-types': typeof DeviceTypesIndexRoute
+  '/devices': typeof DevicesIndexRoute
+  '/users': typeof UsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/installers': typeof InstallersRoute
+  '/login': typeof LoginRoute
+  '/notifications': typeof NotificationsRoute
+  '/relationships': typeof RelationshipsRoute
+  '/support': typeof SupportRoute
+  '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
+  '/devices/$serial': typeof DevicesSerialRoute
+  '/users/$userId': typeof UsersUserIdRoute
+  '/device-types/': typeof DeviceTypesIndexRoute
+  '/devices/': typeof DevicesIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/installers'
+    | '/login'
+    | '/notifications'
+    | '/relationships'
+    | '/support'
+    | '/device-types/$typeId'
+    | '/devices/$serial'
+    | '/users/$userId'
+    | '/device-types/'
+    | '/devices/'
+    | '/users/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/installers'
+    | '/login'
+    | '/notifications'
+    | '/relationships'
+    | '/support'
+    | '/device-types/$typeId'
+    | '/devices/$serial'
+    | '/users/$userId'
+    | '/device-types'
+    | '/devices'
+    | '/users'
+  id:
+    | '__root__'
+    | '/'
+    | '/installers'
+    | '/login'
+    | '/notifications'
+    | '/relationships'
+    | '/support'
+    | '/device-types/$typeId'
+    | '/devices/$serial'
+    | '/users/$userId'
+    | '/device-types/'
+    | '/devices/'
+    | '/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  InstallersRoute: typeof InstallersRoute
+  LoginRoute: typeof LoginRoute
+  NotificationsRoute: typeof NotificationsRoute
+  RelationshipsRoute: typeof RelationshipsRoute
+  SupportRoute: typeof SupportRoute
+  DeviceTypesTypeIdRoute: typeof DeviceTypesTypeIdRoute
+  DevicesSerialRoute: typeof DevicesSerialRoute
+  UsersUserIdRoute: typeof UsersUserIdRoute
+  DeviceTypesIndexRoute: typeof DeviceTypesIndexRoute
+  DevicesIndexRoute: typeof DevicesIndexRoute
+  UsersIndexRoute: typeof UsersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +195,99 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/installers': {
+      id: '/installers'
+      path: '/installers'
+      fullPath: '/installers'
+      preLoaderRoute: typeof InstallersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/relationships': {
+      id: '/relationships'
+      path: '/relationships'
+      fullPath: '/relationships'
+      preLoaderRoute: typeof RelationshipsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/device-types/': {
+      id: '/device-types/'
+      path: '/device-types'
+      fullPath: '/device-types/'
+      preLoaderRoute: typeof DeviceTypesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/device-types/$typeId': {
+      id: '/device-types/$typeId'
+      path: '/device-types/$typeId'
+      fullPath: '/device-types/$typeId'
+      preLoaderRoute: typeof DeviceTypesTypeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devices/': {
+      id: '/devices/'
+      path: '/devices'
+      fullPath: '/devices/'
+      preLoaderRoute: typeof DevicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/devices/$serial': {
+      id: '/devices/$serial'
+      path: '/devices/$serial'
+      fullPath: '/devices/$serial'
+      preLoaderRoute: typeof DevicesSerialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users/': {
+      id: '/users/'
+      path: '/users'
+      fullPath: '/users/'
+      preLoaderRoute: typeof UsersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users/$userId': {
+      id: '/users/$userId'
+      path: '/users/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof UsersUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  InstallersRoute: InstallersRoute,
+  LoginRoute: LoginRoute,
+  NotificationsRoute: NotificationsRoute,
+  RelationshipsRoute: RelationshipsRoute,
+  SupportRoute: SupportRoute,
+  DeviceTypesTypeIdRoute: DeviceTypesTypeIdRoute,
+  DevicesSerialRoute: DevicesSerialRoute,
+  UsersUserIdRoute: UsersUserIdRoute,
+  DeviceTypesIndexRoute: DeviceTypesIndexRoute,
+  DevicesIndexRoute: DevicesIndexRoute,
+  UsersIndexRoute: UsersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
