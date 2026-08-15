@@ -102,7 +102,7 @@ function SupportPage() {
                     <div key={m.id} className="rounded-md border border-border/70 bg-background p-3">
                       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                         <span>{userName(m.AuthorUserId)}</span>
-                        <span className="font-mono">{formatDateTime(m.CreatedAt)}</span>
+                        <span className="font-mono">{formatDateTime(m.SentAt)}</span>
                       </div>
                       <p className="mt-2 text-sm">{m.Body}</p>
                     </div>

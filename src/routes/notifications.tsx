@@ -77,16 +77,16 @@ function NotificationsPage() {
         <EmptyState title="No notifications yet" description="Send your first notification to app users." />
       ) : (
         <div className="space-y-3">
-          {(list.data ?? []).map((n) => (
-            <article key={n.id} className="rounded-lg border border-border bg-surface p-4 shadow-panel">
+          {(list.data ?? []).map((row) => (
+            <article key={row.userNotification.id} className="rounded-lg border border-border bg-surface p-4 shadow-panel">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-sm font-semibold">{n.Title}</h2>
+                <h2 className="text-sm font-semibold">{row.notification.Title}</h2>
                 <div className="flex items-center gap-2">
-                  <Pill tone="info">{n.NotificationType}</Pill>
-                  <span className="font-mono text-xs text-muted-foreground">{formatDateTime(n.CreatedAt)}</span>
+                  <Pill tone="info">{row.notification.NotificationType}</Pill>
+                  <span className="font-mono text-xs text-muted-foreground">{formatDateTime(row.notification.CreatedAt)}</span>
                 </div>
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">{n.Body}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{row.notification.Body}</p>
             </article>
           ))}
         </div>
@@ -97,10 +97,6 @@ function NotificationsPage() {
         onOpenChange={setOpen}
         title="Send notification"
         description="This message is delivered to every active app user."
-        submitLabel="Send notification"
-        loading={send.isPending}
-        canSubmit={parsed.success}
-        onSubmit={() => send.mutate()}
       >
         <div className="space-y-1.5">
           <Label htmlFor="n-title">Title</Label>
@@ -109,6 +105,14 @@ function NotificationsPage() {
         <div className="space-y-1.5">
           <Label htmlFor="n-body">Message</Label>
           <Textarea id="n-body" className="bg-background" rows={5} value={body} onChange={(e) => setBody(e.target.value)} maxLength={1000} />
+        </div>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={send.isPending}>
+            Cancel
+          </Button>
+          <Button onClick={() => send.mutate()} disabled={!parsed.success || send.isPending}>
+            {send.isPending ? "Sending…" : "Send notification"}
+          </Button>
         </div>
       </FormModal>
     </AppShell>
