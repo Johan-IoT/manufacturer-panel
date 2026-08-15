@@ -51,7 +51,7 @@ function RelationshipsPage() {
 
   const term = search.trim().toLowerCase();
   const rows = (links.data ?? []).filter(
-    (l) => !term || l.SerialNumber.toLowerCase().includes(term) || userName(l.AppUserId).toLowerCase().includes(term),
+    (l) => !term || l.DeviceSerialNumber.toLowerCase().includes(term) || userName(l.AppUserId).toLowerCase().includes(term),
   );
 
   return (
@@ -80,7 +80,7 @@ function RelationshipsPage() {
               key={link.id}
               link={link}
               title={userName(link.AppUserId)}
-              subtitle={link.SerialNumber}
+              subtitle={link.DeviceSerialNumber}
               action={
                 permissions.canManageRelationships && link.Active ? (
                   <Button variant="outline" size="sm" onClick={() => setRevokeId(link.id)}>

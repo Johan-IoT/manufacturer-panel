@@ -66,7 +66,7 @@ function UserDetailPage() {
         ) : (
           <div className="grid gap-3 xl:grid-cols-2">
             {(linksQuery.data ?? []).map((link) => (
-              <RelationshipCard key={link.id} link={link} title={link.SerialNumber} subtitle={link.RelationshipType} />
+              <RelationshipCard key={link.id} link={link} title={link.DeviceSerialNumber} subtitle={link.LinkType} />
             ))}
           </div>
         )}
