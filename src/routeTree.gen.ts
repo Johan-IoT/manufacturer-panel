@@ -17,6 +17,7 @@ import { Route as RelationshipsRouteImport } from './routes/relationships'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as DeviceTypesIndexRouteImport } from './routes/device-types.index'
 import { Route as DeviceTypesTypeIdRouteImport } from './routes/device-types.$typeId'
+import { Route as DeviceTypesNewRouteImport } from './routes/device-types.new'
 import { Route as DevicesIndexRouteImport } from './routes/devices.index'
 import { Route as DevicesSerialRouteImport } from './routes/devices.$serial'
 import { Route as UsersIndexRouteImport } from './routes/users.index'
@@ -62,6 +63,11 @@ const DeviceTypesTypeIdRoute = DeviceTypesTypeIdRouteImport.update({
   path: '/device-types/$typeId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeviceTypesNewRoute = DeviceTypesNewRouteImport.update({
+  id: '/device-types/new',
+  path: '/device-types/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevicesIndexRoute = DevicesIndexRouteImport.update({
   id: '/devices/',
   path: '/devices/',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/relationships': typeof RelationshipsRoute
   '/support': typeof SupportRoute
   '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
+  '/device-types/new': typeof DeviceTypesNewRoute
   '/devices/$serial': typeof DevicesSerialRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/device-types/': typeof DeviceTypesIndexRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/relationships': typeof RelationshipsRoute
   '/support': typeof SupportRoute
   '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
+  '/device-types/new': typeof DeviceTypesNewRoute
   '/devices/$serial': typeof DevicesSerialRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/device-types': typeof DeviceTypesIndexRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/relationships': typeof RelationshipsRoute
   '/support': typeof SupportRoute
   '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
+  '/device-types/new': typeof DeviceTypesNewRoute
   '/devices/$serial': typeof DevicesSerialRoute
   '/users/$userId': typeof UsersUserIdRoute
   '/device-types/': typeof DeviceTypesIndexRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/relationships'
     | '/support'
     | '/device-types/$typeId'
+    | '/device-types/new'
     | '/devices/$serial'
     | '/users/$userId'
     | '/device-types/'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/relationships'
     | '/support'
     | '/device-types/$typeId'
+    | '/device-types/new'
     | '/devices/$serial'
     | '/users/$userId'
     | '/device-types'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/relationships'
     | '/support'
     | '/device-types/$typeId'
+    | '/device-types/new'
     | '/devices/$serial'
     | '/users/$userId'
     | '/device-types/'
@@ -179,6 +191,7 @@ export interface RootRouteChildren {
   RelationshipsRoute: typeof RelationshipsRoute
   SupportRoute: typeof SupportRoute
   DeviceTypesTypeIdRoute: typeof DeviceTypesTypeIdRoute
+  DeviceTypesNewRoute: typeof DeviceTypesNewRoute
   DevicesSerialRoute: typeof DevicesSerialRoute
   UsersUserIdRoute: typeof UsersUserIdRoute
   DeviceTypesIndexRoute: typeof DeviceTypesIndexRoute
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DeviceTypesTypeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/device-types/new': {
+      id: '/device-types/new'
+      path: '/device-types/new'
+      fullPath: '/device-types/new'
+      preLoaderRoute: typeof DeviceTypesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/devices/': {
       id: '/devices/'
       path: '/devices'
@@ -283,6 +303,7 @@ const rootRouteChildren: RootRouteChildren = {
   RelationshipsRoute: RelationshipsRoute,
   SupportRoute: SupportRoute,
   DeviceTypesTypeIdRoute: DeviceTypesTypeIdRoute,
+  DeviceTypesNewRoute: DeviceTypesNewRoute,
   DevicesSerialRoute: DevicesSerialRoute,
   UsersUserIdRoute: UsersUserIdRoute,
   DeviceTypesIndexRoute: DeviceTypesIndexRoute,

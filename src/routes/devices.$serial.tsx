@@ -205,7 +205,7 @@ function DeviceDetailPage() {
                     action={
                       permissions.canManageRelationships && link.Active ? (
                         <Button variant="destructiveOutline" size="sm" onClick={() => setRevokeLink(link)}>
-                          Revoke access
+                          {link.LinkType === "Owner" ? "Release ownership" : "Revoke access"}
                         </Button>
                       ) : undefined
                     }

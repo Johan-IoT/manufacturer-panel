@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
-import { Pill } from "@/components/app/badges";
+import { DeliveryStatusBadge, Pill, ReadStateBadge } from "@/components/app/badges";
 import { EmptyState } from "@/components/app/states";
 import { AnimatedStagger, AsyncPageContent } from "@/components/app/page-layout";
 import { FormModal, ConfirmationDialog } from "@/components/app/dialogs";
@@ -20,9 +20,9 @@ import { formatDateTime } from "@/lib/format";
 export const Route = createFileRoute("/notifications")({
   head: () => ({
     meta: [
-      { title: "Notifications — Manufacturer Panel | GSM Systems" },
+      { title: "Notifications | Manufacturer Panel | GSM Systems" },
       { name: "description", content: "Review sent notifications and broadcast new messages to app users." },
-      { property: "og:title", content: "Notifications — Manufacturer Panel" },
+      { property: "og:title", content: "Notifications | Manufacturer Panel" },
       { property: "og:description", content: "Notification history and composer." },
     ],
   }),
@@ -86,11 +86,27 @@ function NotificationsPage() {
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h2 className="text-sm font-semibold">{row.notification.Title}</h2>
                   <div className="flex items-center gap-2">
+                    <ReadStateBadge isRead={row.userNotification.IsRead} />
                     <Pill tone="info">{row.notification.NotificationType}</Pill>
                     <span className="font-mono text-xs text-muted-foreground">{formatDateTime(row.notification.CreatedAt)}</span>
                   </div>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{row.notification.Body}</p>
+                {row.recipient && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Recipient: {row.recipient.FirstName} {row.recipient.LastName}
+                  </p>
+                )}
+                {row.deliveries.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {row.deliveries.map((d) => (
+                      <div key={d.id} className="flex items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1">
+                        <span className="text-xs text-muted-foreground">{d.InstallationLabel}</span>
+                        <DeliveryStatusBadge status={d.DeliveryStatus} />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </article>
             ))}
           </AnimatedStagger>

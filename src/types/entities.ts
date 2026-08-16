@@ -1,6 +1,5 @@
 // Domain entity types — names mirror the authoritative backend schema exactly.
 
-export type UserRole = "Manufacturer" | "Installer" | "DeviceUser";
 export type AccountStatus = "Pending" | "Active" | "Suspended" | "Disabled";
 
 export interface AppUser {
@@ -9,7 +8,8 @@ export interface AppUser {
   LastName: string;
   Email: string;
   MobileNumber: string;
-  UserRole: UserRole;
+  IsManufacturer: boolean;
+  IsInstaller: boolean;
   AccountStatus: AccountStatus;
   EmailVerified: boolean;
   MobileVerified: boolean;

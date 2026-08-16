@@ -27,10 +27,10 @@ export function revokeAccessCopy(
       };
     case "Owner":
       return {
-        title: "Revoke owner access?",
-        description: `Are you sure you want to revoke ${userLabel}'s owner access to ${deviceLabel}?`,
-        confirmLabel: "Revoke access",
-        successToast: "Owner access revoked successfully.",
+        title: "Release ownership?",
+        description: `Are you sure you want to release ${userLabel}'s ownership of ${deviceLabel}? The Owner link will be revoked.`,
+        confirmLabel: "Release ownership",
+        successToast: "Ownership released successfully.",
       };
     default:
       return {

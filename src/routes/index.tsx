@@ -109,6 +109,49 @@ function DashboardPage() {
               </Panel>
 
               <Panel
+                title="Recent ownership claims"
+                action={
+                  <Link to="/relationships" className="text-xs text-primary hover:underline">
+                    Manage relationships
+                  </Link>
+                }
+              >
+                <ul className="space-y-3">
+                  {data!.recentClaims.map((c) => (
+                    <li key={`${c.serial}-${c.at}`} className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <Link
+                          to="/devices/$serial"
+                          params={{ serial: c.serial }}
+                          className="block truncate font-mono text-xs text-foreground hover:text-primary"
+                        >
+                          {c.serial}
+                        </Link>
+                        <p className="truncate text-xs text-muted-foreground">{c.user}</p>
+                      </div>
+                      <span className="shrink-0 text-xs text-muted-foreground">{relativeTime(c.at)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            </AnimatedStagger>
+
+            <AnimatedStagger className="grid gap-4 lg:grid-cols-2">
+              <Panel title="Devices by type">
+                <ul className="space-y-3">
+                  {data!.devicesByType.map((entry) => (
+                    <li key={entry.typeCode} className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-mono text-xs text-foreground">{entry.typeCode}</p>
+                        <p className="truncate text-xs text-muted-foreground">{entry.typeName}</p>
+                      </div>
+                      <span className="shrink-0 tabular-nums text-sm font-medium">{entry.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+
+              <Panel
                 title="Recent relationship changes"
                 action={
                   <Link to="/relationships" className="text-xs text-primary hover:underline">

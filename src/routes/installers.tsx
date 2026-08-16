@@ -24,7 +24,7 @@ function InstallersPage() {
   const users = useQuery({ queryKey: ["users"], queryFn: () => userService.list() });
   const links = useQuery({ queryKey: ["links"], queryFn: () => relationshipService.list() });
 
-  const installers = (users.data ?? []).filter((u) => u.UserRole === "Installer");
+  const installers = (users.data ?? []).filter((u) => u.IsInstaller);
   const deviceCount = (id: string) => (links.data ?? []).filter((l) => l.AppUserId === id && l.Active).length;
 
   const columns: Column<AppUser>[] = [

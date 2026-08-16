@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { humanCategory } from "@/lib/format";
 import { iconTone, permissionIconTone } from "@/lib/icon-colors";
 import { Eye, Settings2, Radio, Share2, Check, X } from "lucide-react";
-import type { AccountStatus, DeviceStatus as DeviceStatusType, LinkType, UserRole } from "@/types/entities";
+import type { AccountStatus, DeviceStatus as DeviceStatusType, LinkType } from "@/types/entities";
 
 type Tone = "neutral" | "success" | "warning" | "danger" | "info" | "primary";
 
@@ -72,14 +72,16 @@ export function StatusBadge({ status }: { status: AccountStatus }) {
   );
 }
 
-const roleTone: Record<UserRole, Tone> = {
-  Manufacturer: "primary",
-  Installer: "info",
-  DeviceUser: "neutral",
-};
-
-export function RoleBadge({ role }: { role: UserRole }) {
-  return <Pill tone={roleTone[role]}>{role === "DeviceUser" ? "Device User" : role}</Pill>;
+export function CapabilityBadges({ user }: { user: { IsManufacturer: boolean; IsInstaller: boolean } }) {
+  if (!user.IsManufacturer && !user.IsInstaller) {
+    return <Pill tone="neutral">App user</Pill>;
+  }
+  return (
+    <>
+      {user.IsManufacturer && <Pill tone="primary">Manufacturer</Pill>}
+      {user.IsInstaller && <Pill tone="info">Installer</Pill>}
+    </>
+  );
 }
 
 const linkTone: Record<LinkType, Tone> = {

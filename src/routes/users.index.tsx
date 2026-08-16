@@ -3,16 +3,16 @@ import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { DataTable, type Column } from "@/components/app/data-table";
-import { Pill } from "@/components/app/badges";
+import { CapabilityBadges, StatusBadge } from "@/components/app/badges";
 import { userService } from "@/services";
 import type { AppUser } from "@/types/entities";
 
 export const Route = createFileRoute("/users/")({
   head: () => ({
     meta: [
-      { title: "App Users — Manufacturer Panel | GSM Systems" },
-      { name: "description", content: "Browse app user accounts, roles and account status across the ecosystem." },
-      { property: "og:title", content: "App Users — Manufacturer Panel" },
+      { title: "App Users | Manufacturer Panel | GSM Systems" },
+      { name: "description", content: "Browse app user accounts, capabilities and account status across the ecosystem." },
+      { property: "og:title", content: "App Users | Manufacturer Panel" },
       { property: "og:description", content: "User directory for the GSM Systems BLE ecosystem." },
     ],
   }),
@@ -25,11 +25,11 @@ function UsersPage() {
 
   const columns: Column<AppUser>[] = [
     { key: "name", header: "Name", sortValue: (u) => u.LastName, render: (u) => `${u.FirstName} ${u.LastName}` },
-    { key: "role", header: "Role", render: (u) => <Pill tone="info">{u.UserRole}</Pill> },
+    { key: "capabilities", header: "Capabilities", render: (u) => <CapabilityBadges user={u} /> },
     {
       key: "status",
       header: "Account Status",
-      render: (u) => <Pill tone={u.AccountStatus === "Active" ? "success" : u.AccountStatus === "Suspended" ? "warning" : "danger"}>{u.AccountStatus}</Pill>,
+      render: (u) => <StatusBadge status={u.AccountStatus} />,
     },
   ];
 
@@ -51,6 +51,7 @@ function UsersPage() {
             label: "Account Status",
             options: [
               { value: "Active", label: "Active" },
+              { value: "Pending", label: "Pending" },
               { value: "Suspended", label: "Suspended" },
               { value: "Disabled", label: "Disabled" },
             ],

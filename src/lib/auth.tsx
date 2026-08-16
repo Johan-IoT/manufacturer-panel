@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const permissions = useMemo<Permissions>(() => {
     if (!session) return noPermissions;
-    const isManufacturer = session.user.UserRole === "Manufacturer" && session.user.AccountStatus === "Active";
+    const isManufacturer = session.user.IsManufacturer && session.user.AccountStatus === "Active";
     return {
       canViewDevices: true,
       canDeactivateDevice: isManufacturer,

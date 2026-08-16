@@ -1,18 +1,21 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { ActiveBadge, CategoryBadge, DeviceTypeBadge, Pill } from "@/components/app/badges";
+import { Button } from "@/components/ui/button";
 import { deviceTypeService } from "@/services";
 import { DEVICE_CATEGORIES, type DeviceType } from "@/types/entities";
+import { usePermissions } from "@/lib/auth";
 
 export const Route = createFileRoute("/device-types/")({
   head: () => ({
     meta: [
-      { title: "Device Types — Manufacturer Panel | GSM Systems" },
+      { title: "Device Types | Manufacturer Panel | GSM Systems" },
       { name: "description", content: "Manage device types, claim rules, RSSI thresholds and their single active BLE profile." },
-      { property: "og:title", content: "Device Types — Manufacturer Panel" },
+      { property: "og:title", content: "Device Types | Manufacturer Panel" },
       { property: "og:description", content: "Device type catalogue for the GSM Systems BLE ecosystem." },
     ],
   }),
@@ -21,6 +24,7 @@ export const Route = createFileRoute("/device-types/")({
 
 function DeviceTypesPage() {
   const navigate = useNavigate();
+  const permissions = usePermissions();
   const query = useQuery({ queryKey: ["device-types"], queryFn: () => deviceTypeService.list() });
 
   const columns: Column<DeviceType>[] = [
@@ -39,7 +43,17 @@ function DeviceTypesPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Device Types" breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Device Types" }]} />
+      <PageHeader
+        title="Device Types"
+        breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Device Types" }]}
+        actions={
+          permissions.canManageDeviceTypes ? (
+            <Button onClick={() => navigate({ to: "/device-types/new" })}>
+              <Plus className="size-4" /> New Device Type
+            </Button>
+          ) : undefined
+        }
+      />
       <DataTable
         data={query.data}
         columns={columns}

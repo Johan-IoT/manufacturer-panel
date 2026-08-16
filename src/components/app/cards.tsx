@@ -3,7 +3,7 @@ import { Cpu, Link2, ShieldCheck, ArrowDownRight, ArrowUpRight, Minus } from "lu
 import { cn } from "@/lib/utils";
 import { iconTone, statAccent, statIconTone, statWell } from "@/lib/icon-colors";
 import { formatDate, formatDateTime, initials } from "@/lib/format";
-import { DeviceStatus, RelationshipBadge, RoleBadge, StatusBadge, Pill } from "./badges";
+import { DeviceStatus, RelationshipBadge, StatusBadge, Pill, CapabilityBadges } from "./badges";
 import { PermissionMatrix } from "./permission-matrix";
 import type { AppUser, Device, DeviceUserLink } from "@/types/entities";
 
@@ -84,7 +84,7 @@ export function UserCard({ user }: { user: AppUser }) {
             <p className="truncate font-medium text-foreground">
               {user.FirstName} {user.LastName}
             </p>
-            <RoleBadge role={user.UserRole} />
+            <CapabilityBadges user={user} />
             <StatusBadge status={user.AccountStatus} />
           </div>
           <p className="mt-1 truncate text-sm text-muted-foreground">{user.Email}</p>

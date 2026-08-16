@@ -47,7 +47,7 @@ export const authService = {
     if (!user || password.length < 6) {
       throw new ApiError("Incorrect email/mobile number or password.", 401);
     }
-    if (user.UserRole !== "Manufacturer") {
+    if (!user.IsManufacturer) {
       throw new ApiError("This panel is restricted to Manufacturer accounts.", 403);
     }
     if (user.AccountStatus !== "Active") {
@@ -90,6 +90,18 @@ export const userService = {
     const user = store.users.find((u) => u.id === id);
     if (!user) throw new ApiError("This user could not be found.", 404);
     user.AccountStatus = status;
+    user.UpdatedAt = new Date().toISOString();
+    return clone(user);
+  },
+  async updateCapabilities(
+    id: string,
+    capabilities: { IsManufacturer?: boolean; IsInstaller?: boolean },
+  ): Promise<AppUser> {
+    await latency(360);
+    const user = store.users.find((u) => u.id === id);
+    if (!user) throw new ApiError("This user could not be found.", 404);
+    if (capabilities.IsManufacturer !== undefined) user.IsManufacturer = capabilities.IsManufacturer;
+    if (capabilities.IsInstaller !== undefined) user.IsInstaller = capabilities.IsInstaller;
     user.UpdatedAt = new Date().toISOString();
     return clone(user);
   },
@@ -412,7 +424,7 @@ export const dashboardService = {
       activeDevices: store.devices.filter((d) => d.DeviceStatus === "Active").length,
       deviceTypes: store.deviceTypes.filter((t) => t.Active).length,
       totalDeviceTypes: store.deviceTypes.length,
-      installers: store.users.filter((u) => u.UserRole === "Installer").length,
+      installers: store.users.filter((u) => u.IsInstaller).length,
       totalUsers: store.users.length,
       activeRelationships: store.links.filter((l) => l.Active).length,
       totalRelationships: store.links.length,
