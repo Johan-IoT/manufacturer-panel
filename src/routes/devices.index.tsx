@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Eye, MoreHorizontal } from "lucide-react";
+import { Ban, Eye, MoreHorizontal, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
@@ -27,9 +27,15 @@ export const Route = createFileRoute("/devices/")({
   head: () => ({
     meta: [
       { title: "Devices | Manufacturer Panel | ConfigGate" },
-      { name: "description", content: "Search, filter and inspect every manufactured BLE device by serial number." },
+      {
+        name: "description",
+        content: "Search, filter and inspect every manufactured BLE device by serial number.",
+      },
       { property: "og:title", content: "Devices | Manufacturer Panel" },
-      { property: "og:description", content: "Device fleet management for the ConfigGate BLE ecosystem." },
+      {
+        property: "og:description",
+        content: "Device fleet management for the ConfigGate BLE ecosystem.",
+      },
     ],
   }),
   component: DevicesPage,
@@ -43,7 +49,10 @@ function DevicesPage() {
   const [toDeactivate, setToDeactivate] = useState<Device | null>(null);
 
   const devicesQuery = useQuery({ queryKey: ["devices"], queryFn: () => deviceService.list() });
-  const typesQuery = useQuery({ queryKey: ["device-types"], queryFn: () => deviceTypeService.list() });
+  const typesQuery = useQuery({
+    queryKey: ["device-types"],
+    queryFn: () => deviceTypeService.list(),
+  });
 
   const typeOf = (id: string) => typesQuery.data?.find((t) => t.id === id);
 
@@ -54,7 +63,8 @@ function DevicesPage() {
       setToDeactivate(null);
       void queryClient.invalidateQueries({ queryKey: ["devices"] });
     },
-    onError: (error) => toast.error(toUserMessage(error, "Unable to deactivate this device. Please try again.")),
+    onError: (error) =>
+      toast.error(toUserMessage(error, "Unable to deactivate this device. Please try again.")),
   });
 
   const columns: Column<Device>[] = [
@@ -76,7 +86,11 @@ function DevicesPage() {
       sortValue: (d) => typeOf(d.DeviceTypeId)?.TypeName ?? "",
       render: (d) => {
         const t = typeOf(d.DeviceTypeId);
-        return t ? <DeviceTypeBadge code={t.TypeCode} name={t.TypeName} /> : <span className="text-muted-foreground">—</span>;
+        return t ? (
+          <DeviceTypeBadge code={t.TypeCode} name={t.TypeName} />
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        );
       },
     },
     {
@@ -85,12 +99,20 @@ function DevicesPage() {
       sortValue: (d) => d.DeviceStatus,
       render: (d) => <DeviceStatus status={d.DeviceStatus} />,
     },
-    { key: "fw", header: "Firmware", render: (d) => <span className="font-mono text-xs">{d.FirmwareVersion}</span> },
+    {
+      key: "fw",
+      header: "Firmware",
+      render: (d) => <span className="font-mono text-xs">{d.FirmwareVersion}</span>,
+    },
     {
       key: "contact",
       header: "Last Server Contact",
       sortValue: (d) => d.LastServerContactAt ?? "",
-      render: (d) => <span className="text-xs text-muted-foreground">{formatDateTime(d.LastServerContactAt)}</span>,
+      render: (d) => (
+        <span className="text-xs text-muted-foreground">
+          {formatDateTime(d.LastServerContactAt)}
+        </span>
+      ),
     },
     { key: "active", header: "Active", render: (d) => <ActiveBadge active={d.Active} /> },
   ];
@@ -100,6 +122,13 @@ function DevicesPage() {
       <PageHeader
         title="Devices"
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Devices" }]}
+        actions={
+          permissions.canDeactivateDevice ? (
+            <Button onClick={() => navigate({ to: "/devices/new" })}>
+              <Plus className="mr-2 size-4" /> Add Device
+            </Button>
+          ) : undefined
+        }
       />
 
       <DataTable
@@ -152,12 +181,17 @@ function DevicesPage() {
                 <Eye className={cn("size-4", iconTone.info)} /> Quick view
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={() => navigate({ to: "/devices/$serial", params: { serial: d.SerialNumber } })}
+                onSelect={() =>
+                  navigate({ to: "/devices/$serial", params: { serial: d.SerialNumber } })
+                }
               >
                 Open device
               </DropdownMenuItem>
               {permissions.canDeactivateDevice && d.Active && (
-                <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setToDeactivate(d)}>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onSelect={() => setToDeactivate(d)}
+                >
                   <Ban className={cn("size-4", iconTone.danger)} /> Deactivate device
                 </DropdownMenuItem>
               )}
@@ -185,7 +219,10 @@ function DevicesPage() {
               ["Last Server Contact", formatDateTime(quickView.LastServerContactAt)],
               ["QR Code Value", maskValue(quickView.QrCodeValue, 6)],
             ].map(([label, value]) => (
-              <div key={label} className="flex items-start justify-between gap-4 border-b border-border/60 pb-2">
+              <div
+                key={label}
+                className="flex items-start justify-between gap-4 border-b border-border/60 pb-2"
+              >
                 <dt className="text-muted-foreground">{label}</dt>
                 <dd className="text-right text-foreground">{value}</dd>
               </div>

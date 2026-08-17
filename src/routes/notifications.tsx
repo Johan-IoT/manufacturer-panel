@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ export const Route = createFileRoute("/notifications")({
 const schema = z.object({
   title: z.string().trim().min(1, "Title is required.").max(120),
   body: z.string().trim().min(1, "Message is required.").max(1000),
+  recipientUserIds: z.array(z.string()).min(1, "Select at least one recipient."),
 });
 
 function NotificationsPage() {
@@ -40,15 +41,32 @@ function NotificationsPage() {
   const [confirmSend, setConfirmSend] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
 
   const list = useQuery({ queryKey: ["notifications"], queryFn: () => notificationService.list() });
   const users = useQuery({ queryKey: ["users"], queryFn: () => userService.list() });
-  const parsed = schema.safeParse({ title, body });
+  const activeUsers = useMemo(
+    () => (users.data ?? []).filter((user) => user.AccountStatus === "Active"),
+    [users.data],
+  );
+  const parsed = schema.safeParse({
+    title,
+    body,
+    recipientUserIds: selectedRecipientIds,
+  });
+
+  const toggleRecipient = (userId: string) => {
+    setSelectedRecipientIds((current) =>
+      current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId],
+    );
+  };
 
   const send = useMutation({
     mutationFn: () =>
       notificationService.send({
-        recipientUserIds: (users.data ?? []).map((u) => u.id),
+        recipientUserIds: selectedRecipientIds,
         title: title.trim(),
         body: body.trim(),
       }),
@@ -58,10 +76,20 @@ function NotificationsPage() {
       setOpen(false);
       setTitle("");
       setBody("");
+      setSelectedRecipientIds([]);
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
     onError: (e) => toast.error(toUserMessage(e, "Unable to send this notification. Please try again.")),
   });
+
+  const recipientSummary = useMemo(() => {
+    if (selectedRecipientIds.length === 0) return "No recipients selected";
+    if (selectedRecipientIds.length === 1) {
+      const user = activeUsers.find((entry) => entry.id === selectedRecipientIds[0]);
+      return user ? `${user.FirstName} ${user.LastName}` : "1 recipient";
+    }
+    return `${selectedRecipientIds.length} recipients`;
+  }, [activeUsers, selectedRecipientIds]);
 
   return (
     <AppShell>
@@ -95,6 +123,7 @@ function NotificationsPage() {
                 {row.recipient && (
                   <p className="mt-2 text-xs text-muted-foreground">
                     Recipient: {row.recipient.FirstName} {row.recipient.LastName}
+                    {row.recipient.Email ? ` (${row.recipient.Email})` : ""}
                   </p>
                 )}
                 {row.deliveries.length > 0 && (
@@ -122,6 +151,29 @@ function NotificationsPage() {
           <Label htmlFor="n-body">Message</Label>
           <Textarea id="n-body" className="bg-background" rows={5} value={body} onChange={(e) => setBody(e.target.value)} maxLength={1000} />
         </div>
+        <div className="space-y-2">
+          <Label>Select recipients</Label>
+          <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-border bg-background p-3">
+            {activeUsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No active users available.</p>
+            ) : (
+              activeUsers.map((user) => (
+                <label key={user.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={selectedRecipientIds.includes(user.id)}
+                    onChange={() => toggleRecipient(user.id)}
+                  />
+                  <span>
+                    {user.FirstName} {user.LastName}
+                    <span className="text-muted-foreground"> ({user.Email})</span>
+                  </span>
+                </label>
+              ))
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">{recipientSummary}</p>
+        </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="outline" onClick={() => setOpen(false)} disabled={send.isPending}>
             Cancel
@@ -136,7 +188,7 @@ function NotificationsPage() {
         open={confirmSend}
         onOpenChange={setConfirmSend}
         title="Send notification?"
-        description={`This will send "${title.trim()}" to all app users. This action cannot be undone.`}
+        description={`This will send "${title.trim()}" to ${recipientSummary}. This action cannot be undone.`}
         confirmLabel="Send notification"
         loading={send.isPending}
         onConfirm={() => send.mutate()}

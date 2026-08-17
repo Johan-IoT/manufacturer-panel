@@ -1,11 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { CapabilityBadges, StatusBadge } from "@/components/app/badges";
+import { Button } from "@/components/ui/button";
 import { userService } from "@/services";
 import type { AppUser } from "@/types/entities";
+import { usePermissions } from "@/lib/auth";
 
 export const Route = createFileRoute("/users/")({
   head: () => ({
@@ -21,6 +24,7 @@ export const Route = createFileRoute("/users/")({
 
 function UsersPage() {
   const navigate = useNavigate();
+  const permissions = usePermissions();
   const query = useQuery({ queryKey: ["users"], queryFn: () => userService.list() });
 
   const columns: Column<AppUser>[] = [
@@ -35,7 +39,17 @@ function UsersPage() {
 
   return (
     <AppShell>
-      <PageHeader title="App Users" breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "App Users" }]} />
+      <PageHeader
+        title="App Users"
+        breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "App Users" }]}
+        actions={
+          permissions.canManageUsers ? (
+            <Button onClick={() => navigate({ to: "/users/new" })}>
+              <Plus className="mr-2 size-4" /> Create Installer
+            </Button>
+          ) : undefined
+        }
+      />
       <DataTable
         data={query.data}
         columns={columns}

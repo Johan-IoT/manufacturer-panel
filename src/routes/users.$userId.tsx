@@ -194,7 +194,12 @@ function UserDetailPage() {
                       id="manufacturer-cap"
                       checked={user.IsManufacturer}
                       disabled={updateCapabilities.isPending}
-                      onCheckedChange={(checked) => updateCapabilities.mutate({ IsManufacturer: checked })}
+                      onCheckedChange={(checked) =>
+                        updateCapabilities.mutate({
+                          IsManufacturer: checked,
+                          IsInstaller: user.IsInstaller,
+                        })
+                      }
                     />
                   </div>
                   <div className="flex items-center justify-between gap-4">
@@ -206,7 +211,12 @@ function UserDetailPage() {
                       id="installer-cap"
                       checked={user.IsInstaller}
                       disabled={updateCapabilities.isPending}
-                      onCheckedChange={(checked) => updateCapabilities.mutate({ IsInstaller: checked })}
+                      onCheckedChange={(checked) =>
+                        updateCapabilities.mutate({
+                          IsManufacturer: user.IsManufacturer,
+                          IsInstaller: checked,
+                        })
+                      }
                     />
                   </div>
                 </div>

@@ -20,8 +20,10 @@ import { Route as DeviceTypesTypeIdRouteImport } from './routes/device-types.$ty
 import { Route as DeviceTypesNewRouteImport } from './routes/device-types.new'
 import { Route as DevicesIndexRouteImport } from './routes/devices.index'
 import { Route as DevicesSerialRouteImport } from './routes/devices.$serial'
+import { Route as DevicesNewRouteImport } from './routes/devices.new'
 import { Route as UsersIndexRouteImport } from './routes/users.index'
 import { Route as UsersUserIdRouteImport } from './routes/users.$userId'
+import { Route as UsersNewRouteImport } from './routes/users.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -78,6 +80,11 @@ const DevicesSerialRoute = DevicesSerialRouteImport.update({
   path: '/devices/$serial',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevicesNewRoute = DevicesNewRouteImport.update({
+  id: '/devices/new',
+  path: '/devices/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UsersIndexRoute = UsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -86,6 +93,11 @@ const UsersIndexRoute = UsersIndexRouteImport.update({
 const UsersUserIdRoute = UsersUserIdRouteImport.update({
   id: '/users/$userId',
   path: '/users/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersNewRoute = UsersNewRouteImport.update({
+  id: '/users/new',
+  path: '/users/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -99,7 +111,9 @@ export interface FileRoutesByFullPath {
   '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
   '/device-types/new': typeof DeviceTypesNewRoute
   '/devices/$serial': typeof DevicesSerialRoute
+  '/devices/new': typeof DevicesNewRoute
   '/users/$userId': typeof UsersUserIdRoute
+  '/users/new': typeof UsersNewRoute
   '/device-types/': typeof DeviceTypesIndexRoute
   '/devices/': typeof DevicesIndexRoute
   '/users/': typeof UsersIndexRoute
@@ -114,7 +128,9 @@ export interface FileRoutesByTo {
   '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
   '/device-types/new': typeof DeviceTypesNewRoute
   '/devices/$serial': typeof DevicesSerialRoute
+  '/devices/new': typeof DevicesNewRoute
   '/users/$userId': typeof UsersUserIdRoute
+  '/users/new': typeof UsersNewRoute
   '/device-types': typeof DeviceTypesIndexRoute
   '/devices': typeof DevicesIndexRoute
   '/users': typeof UsersIndexRoute
@@ -130,7 +146,9 @@ export interface FileRoutesById {
   '/device-types/$typeId': typeof DeviceTypesTypeIdRoute
   '/device-types/new': typeof DeviceTypesNewRoute
   '/devices/$serial': typeof DevicesSerialRoute
+  '/devices/new': typeof DevicesNewRoute
   '/users/$userId': typeof UsersUserIdRoute
+  '/users/new': typeof UsersNewRoute
   '/device-types/': typeof DeviceTypesIndexRoute
   '/devices/': typeof DevicesIndexRoute
   '/users/': typeof UsersIndexRoute
@@ -147,7 +165,9 @@ export interface FileRouteTypes {
     | '/device-types/$typeId'
     | '/device-types/new'
     | '/devices/$serial'
+    | '/devices/new'
     | '/users/$userId'
+    | '/users/new'
     | '/device-types/'
     | '/devices/'
     | '/users/'
@@ -162,7 +182,9 @@ export interface FileRouteTypes {
     | '/device-types/$typeId'
     | '/device-types/new'
     | '/devices/$serial'
+    | '/devices/new'
     | '/users/$userId'
+    | '/users/new'
     | '/device-types'
     | '/devices'
     | '/users'
@@ -177,7 +199,9 @@ export interface FileRouteTypes {
     | '/device-types/$typeId'
     | '/device-types/new'
     | '/devices/$serial'
+    | '/devices/new'
     | '/users/$userId'
+    | '/users/new'
     | '/device-types/'
     | '/devices/'
     | '/users/'
@@ -193,7 +217,9 @@ export interface RootRouteChildren {
   DeviceTypesTypeIdRoute: typeof DeviceTypesTypeIdRoute
   DeviceTypesNewRoute: typeof DeviceTypesNewRoute
   DevicesSerialRoute: typeof DevicesSerialRoute
+  DevicesNewRoute: typeof DevicesNewRoute
   UsersUserIdRoute: typeof UsersUserIdRoute
+  UsersNewRoute: typeof UsersNewRoute
   DeviceTypesIndexRoute: typeof DeviceTypesIndexRoute
   DevicesIndexRoute: typeof DevicesIndexRoute
   UsersIndexRoute: typeof UsersIndexRoute
@@ -278,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevicesSerialRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/devices/new': {
+      id: '/devices/new'
+      path: '/devices/new'
+      fullPath: '/devices/new'
+      preLoaderRoute: typeof DevicesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/users/': {
       id: '/users/'
       path: '/users'
@@ -290,6 +323,13 @@ declare module '@tanstack/react-router' {
       path: '/users/$userId'
       fullPath: '/users/$userId'
       preLoaderRoute: typeof UsersUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users/new': {
+      id: '/users/new'
+      path: '/users/new'
+      fullPath: '/users/new'
+      preLoaderRoute: typeof UsersNewRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -305,7 +345,9 @@ const rootRouteChildren: RootRouteChildren = {
   DeviceTypesTypeIdRoute: DeviceTypesTypeIdRoute,
   DeviceTypesNewRoute: DeviceTypesNewRoute,
   DevicesSerialRoute: DevicesSerialRoute,
+  DevicesNewRoute: DevicesNewRoute,
   UsersUserIdRoute: UsersUserIdRoute,
+  UsersNewRoute: UsersNewRoute,
   DeviceTypesIndexRoute: DeviceTypesIndexRoute,
   DevicesIndexRoute: DevicesIndexRoute,
   UsersIndexRoute: UsersIndexRoute,

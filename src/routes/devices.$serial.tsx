@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban } from "lucide-react";
+import { Ban, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
@@ -38,6 +38,24 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
       <span className="text-right text-foreground">{value}</span>
     </div>
   );
+}
+
+function formatCoordinate(value: number | string | null | undefined): string {
+  if (value == null || value === "") return "—";
+  const num = typeof value === "number" ? value : Number(value);
+  if (Number.isNaN(num)) return "—";
+  return num.toFixed(6);
+}
+
+function mapsUrl(latitude: number | string, longitude: number | string): string {
+  return `https://www.google.com/maps?q=${latitude},${longitude}`;
+}
+
+function hasKnownLocation(device: {
+  LastKnownLatitude: number | string | null;
+  LastKnownLongitude: number | string | null;
+}): boolean {
+  return device.LastKnownLatitude != null && device.LastKnownLongitude != null;
 }
 
 function DeviceDetailPage() {
@@ -79,6 +97,17 @@ function DeviceDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ["links", "device", serial] });
     },
     onError: (e) => toast.error(toUserMessage(e, "Unable to revoke access. Please try again.")),
+  });
+
+  const releaseOwnership = useMutation({
+    mutationFn: () => deviceService.releaseOwnership(serial),
+    onSuccess: () => {
+      toast.success("Ownership released successfully.");
+      setRevokeLink(null);
+      void queryClient.invalidateQueries({ queryKey: ["device", serial] });
+      void queryClient.invalidateQueries({ queryKey: ["links", "device", serial] });
+    },
+    onError: (e) => toast.error(toUserMessage(e, "Unable to release ownership. Please try again.")),
   });
 
   if (deviceQuery.isLoading) {
@@ -172,6 +201,30 @@ function DeviceDetailPage() {
             )}
           </section>
 
+          <section className="rounded-lg border border-border bg-surface p-4 shadow-none">
+            <h2 className="mb-3 text-sm font-semibold">Latest known location</h2>
+            <Row label="Latitude" value={formatCoordinate(device.LastKnownLatitude)} />
+            <Row label="Longitude" value={formatCoordinate(device.LastKnownLongitude)} />
+            <Row label="Captured At" value={formatDateTime(device.LastGpsCapturedAt)} />
+            {hasKnownLocation(device) ? (
+              <div className="pt-3">
+                <Button variant="outline" size="sm" asChild>
+                  <a
+                    href={mapsUrl(device.LastKnownLatitude!, device.LastKnownLongitude!)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="size-4" /> Verify location
+                  </a>
+                </Button>
+              </div>
+            ) : (
+              <p className="pt-2 text-sm text-muted-foreground">
+                No GPS location has been recorded for this device yet.
+              </p>
+            )}
+          </section>
+
           <section className="rounded-lg border border-border bg-surface p-4 shadow-none xl:col-span-2">
             <h2 className="mb-3 text-sm font-semibold">Recent activity & diagnostics</h2>
             <Row label="Last BLE Connection" value={formatDateTime(device.LastBleConnectionAt)} />
@@ -247,8 +300,15 @@ function DeviceDetailPage() {
             : "Revoke access"
         }
         destructive
-        loading={revoke.isPending}
-        onConfirm={() => revokeLink && revoke.mutate(revokeLink)}
+        loading={revoke.isPending || releaseOwnership.isPending}
+        onConfirm={() => {
+          if (!revokeLink) return;
+          if (revokeLink.LinkType === "Owner") {
+            releaseOwnership.mutate();
+            return;
+          }
+          revoke.mutate(revokeLink);
+        }}
       />
     </AppShell>
   );

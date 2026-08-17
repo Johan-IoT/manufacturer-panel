@@ -10,7 +10,15 @@ import type {
   SupportThread,
   SupportThreadStatus,
 } from "@/types/entities";
-import { ApiError, apiFetch, clone, setAccessToken, setRefreshToken, clearAuthTokens, unwrapData } from "./client";
+import {
+  ApiError,
+  apiFetch,
+  clone,
+  setAccessToken,
+  setRefreshToken,
+  clearAuthTokens,
+  unwrapData,
+} from "./client";
 import { normalizeUser } from "./user-mapper";
 
 const SESSION_KEY = "gsm.manufacturer.session";
@@ -110,6 +118,24 @@ export const userService = {
     );
     return clone(data);
   },
+  async createInstaller(input: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    mobileNumber: string;
+    password: string;
+    companyName?: string;
+  }): Promise<AppUser> {
+    const data = normalizeUser(
+      await unwrapData(
+        await apiFetch<{ data: AppUser }>("/users", {
+          method: "POST",
+          body: JSON.stringify(input),
+        }),
+      ),
+    );
+    return clone(data);
+  },
 };
 
 export const deviceTypeService = {
@@ -175,9 +201,25 @@ export const deviceService = {
   async deactivate(serialNumber: string): Promise<Device> {
     return clone(
       await unwrapData(
-        await apiFetch<{ data: Device }>(`/devices/${serialNumber}/deactivate`, { method: "PATCH" }),
+        await apiFetch<{ data: Device }>(`/devices/${serialNumber}/deactivate`, {
+          method: "PATCH",
+        }),
       ),
     );
+  },
+  async releaseOwnership(serialNumber: string): Promise<void> {
+    await apiFetch(`/devices/${serialNumber}/release-ownership`, { method: "DELETE" });
+  },
+  async register(input: {
+    serialNumber: string;
+    deviceTypeId: string;
+    name?: string;
+    firmwareVersion?: string;
+  }): Promise<void> {
+    await apiFetch("/devices/register", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   },
 };
 
@@ -187,14 +229,18 @@ export const relationshipService = {
   },
   async listForDevice(serial: string): Promise<DeviceUserLink[]> {
     return clone(
-      await unwrapData(await apiFetch<{ data: DeviceUserLink[] }>(`/device-links/device/${serial}`)),
+      await unwrapData(
+        await apiFetch<{ data: DeviceUserLink[] }>(`/device-links/device/${serial}`),
+      ),
     );
   },
   async listForUser(userId: string): Promise<DeviceUserLink[]> {
     const all = await this.list();
     return all.filter((l) => l.AppUserId === userId);
   },
-  async grant(input: Omit<DeviceUserLink, "id" | "Active" | "GrantedAt" | "RevokedAt">): Promise<DeviceUserLink> {
+  async grant(
+    input: Omit<DeviceUserLink, "id" | "Active" | "GrantedAt" | "RevokedAt">,
+  ): Promise<DeviceUserLink> {
     return clone(
       await unwrapData(
         await apiFetch<{ data: DeviceUserLink }>("/device-links/grant", {

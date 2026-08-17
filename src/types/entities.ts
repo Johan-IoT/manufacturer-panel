@@ -120,6 +120,9 @@ export interface Device {
   DeviceStatus: DeviceStatus;
   LastKnownBleName: string | null;
   LastKnownAndroidMac: string | null;
+  LastKnownLatitude: number | string | null;
+  LastKnownLongitude: number | string | null;
+  LastGpsCapturedAt: string | null;
   QrCodeValue: string;
   LastBleConnectionAt: string | null;
   LastServerContactAt: string | null;
