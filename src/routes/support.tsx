@@ -21,10 +21,10 @@ import type { SupportThreadStatus } from "@/types/entities";
 export const Route = createFileRoute("/support")({
   head: () => ({
     meta: [
-      { title: "Support | Manufacturer Panel | GSM Systems" },
+      { title: "Support | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Read support threads from app users and reply manually." },
       { property: "og:title", content: "Support | Manufacturer Panel" },
-      { property: "og:description", content: "Manual support inbox for the GSM Systems BLE ecosystem." },
+      { property: "og:description", content: "Manual support inbox for the ConfigGate BLE ecosystem." },
     ],
   }),
   component: SupportPage,

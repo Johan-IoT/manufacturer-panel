@@ -23,7 +23,7 @@ import type { DeviceUserLink, LinkType } from "@/types/entities";
 export const Route = createFileRoute("/relationships")({
   head: () => ({
     meta: [
-      { title: "Relationships | Manufacturer Panel | GSM Systems" },
+      { title: "Relationships | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Review, grant and revoke device-to-user relationships across the fleet." },
       { property: "og:title", content: "Relationships | Manufacturer Panel" },
       { property: "og:description", content: "Device ownership and installer access management." },

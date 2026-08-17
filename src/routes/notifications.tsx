@@ -20,7 +20,7 @@ import { formatDateTime } from "@/lib/format";
 export const Route = createFileRoute("/notifications")({
   head: () => ({
     meta: [
-      { title: "Notifications | Manufacturer Panel | GSM Systems" },
+      { title: "Notifications | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Review sent notifications and broadcast new messages to app users." },
       { property: "og:title", content: "Notifications | Manufacturer Panel" },
       { property: "og:description", content: "Notification history and composer." },

@@ -18,7 +18,7 @@ interface AuthContextValue {
   session: Session | null;
   ready: boolean;
   permissions: Permissions;
-  signIn: (identifier: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
 }
 
@@ -44,8 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, []);
 
-  const signIn = useCallback(async (identifier: string, password: string) => {
-    const next = await authService.signIn(identifier, password);
+  const signIn = useCallback(async (email: string, password: string) => {
+    const next = await authService.signIn(email, password);
     setSession(next);
   }, []);
 

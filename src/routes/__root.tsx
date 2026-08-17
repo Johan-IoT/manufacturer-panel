@@ -70,14 +70,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Manufacturer Panel — GSM Systems" },
+      { title: "Manufacturer Panel | ConfigGate" },
       {
         name: "description",
         content:
-          "Manufacturer Panel for the GSM Systems BLE device ecosystem: devices, device types, BLE profiles, relationships and support.",
+          "Manufacturer Panel for the ConfigGate BLE device ecosystem: devices, device types, BLE profiles, relationships and support.",
       },
-      { name: "author", content: "GSM Systems" },
-      { property: "og:title", content: "Manufacturer Panel — GSM Systems" },
+      { name: "author", content: "ConfigGate" },
+      { property: "og:title", content: "Manufacturer Panel | ConfigGate" },
       { property: "og:description", content: "Enterprise control layer for BLE device configuration and access management." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

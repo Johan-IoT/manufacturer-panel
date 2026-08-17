@@ -22,7 +22,7 @@ import { DEVICE_CATEGORIES, type DeviceCategory, type DeviceType } from "@/types
 export const Route = createFileRoute("/device-types/$typeId")({
   head: () => ({
     meta: [
-      { title: "Device Type | Manufacturer Panel | GSM Systems" },
+      { title: "Device Type | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Edit device type settings and its single active BLE profile." },
       { property: "og:title", content: "Device Type | Manufacturer Panel" },
       { property: "og:description", content: "Device type and BLE profile configuration." },

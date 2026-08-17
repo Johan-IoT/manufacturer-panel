@@ -10,10 +10,10 @@ import type { AppUser } from "@/types/entities";
 export const Route = createFileRoute("/users/")({
   head: () => ({
     meta: [
-      { title: "App Users | Manufacturer Panel | GSM Systems" },
+      { title: "App Users | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Browse app user accounts, capabilities and account status across the ecosystem." },
       { property: "og:title", content: "App Users | Manufacturer Panel" },
-      { property: "og:description", content: "User directory for the GSM Systems BLE ecosystem." },
+      { property: "og:description", content: "User directory for the ConfigGate BLE ecosystem." },
     ],
   }),
   component: UsersPage,

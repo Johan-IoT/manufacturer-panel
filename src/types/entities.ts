@@ -2,12 +2,16 @@
 
 export type AccountStatus = "Pending" | "Active" | "Suspended" | "Disabled";
 
+export type GlobalRole = "Manufacturer" | "Installer";
+
 export interface AppUser {
   id: string;
   FirstName: string;
   LastName: string;
   Email: string;
   MobileNumber: string;
+  /** Global roles assigned by a Manufacturer (supports multiple). */
+  globalRoles: GlobalRole[];
   IsManufacturer: boolean;
   IsInstaller: boolean;
   AccountStatus: AccountStatus;

@@ -13,10 +13,10 @@ import { usePermissions } from "@/lib/auth";
 export const Route = createFileRoute("/device-types/")({
   head: () => ({
     meta: [
-      { title: "Device Types | Manufacturer Panel | GSM Systems" },
+      { title: "Device Types | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Manage device types, claim rules, RSSI thresholds and their single active BLE profile." },
       { property: "og:title", content: "Device Types | Manufacturer Panel" },
-      { property: "og:description", content: "Device type catalogue for the GSM Systems BLE ecosystem." },
+      { property: "og:description", content: "Device type catalogue for the ConfigGate BLE ecosystem." },
     ],
   }),
   component: DeviceTypesPage,

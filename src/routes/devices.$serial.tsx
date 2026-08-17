@@ -22,9 +22,9 @@ import type { DeviceUserLink } from "@/types/entities";
 export const Route = createFileRoute("/devices/$serial")({
   head: () => ({
     meta: [
-      { title: "Device detail — Manufacturer Panel | GSM Systems" },
+      { title: "Device detail | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Hardware, BLE profile reference and device relationships for a single device." },
-      { property: "og:title", content: "Device detail — Manufacturer Panel" },
+      { property: "og:title", content: "Device detail | Manufacturer Panel" },
       { property: "og:description", content: "Inspect a single BLE device by serial number." },
     ],
   }),

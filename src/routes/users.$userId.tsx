@@ -24,7 +24,7 @@ import { iconTone } from "@/lib/icon-colors";
 export const Route = createFileRoute("/users/$userId")({
   head: () => ({
     meta: [
-      { title: "User detail | Manufacturer Panel | GSM Systems" },
+      { title: "User detail | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Account details and device relationships for a single app user." },
       { property: "og:title", content: "User detail | Manufacturer Panel" },
       { property: "og:description", content: "App user account and linked devices." },

@@ -95,7 +95,7 @@ function BrandMark() {
       </div>
       <div className="leading-tight">
         <p className="font-display text-sm font-semibold tracking-tight text-sidebar-foreground">Manufacturer Panel</p>
-        <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">GSM Systems</p>
+        <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">ConfigGate</p>
       </div>
     </div>
   );

@@ -26,10 +26,10 @@ import { usePermissions } from "@/lib/auth";
 export const Route = createFileRoute("/devices/")({
   head: () => ({
     meta: [
-      { title: "Devices — Manufacturer Panel | GSM Systems" },
+      { title: "Devices | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Search, filter and inspect every manufactured BLE device by serial number." },
-      { property: "og:title", content: "Devices — Manufacturer Panel" },
-      { property: "og:description", content: "Device fleet management for the GSM Systems BLE ecosystem." },
+      { property: "og:title", content: "Devices | Manufacturer Panel" },
+      { property: "og:description", content: "Device fleet management for the ConfigGate BLE ecosystem." },
     ],
   }),
   component: DevicesPage,

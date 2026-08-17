@@ -13,13 +13,13 @@ import { relativeTime } from "@/lib/format";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard — Manufacturer Panel | GSM Systems" },
+      { title: "Dashboard | Manufacturer Panel | ConfigGate" },
       {
         name: "description",
         content: "Operational overview of devices, device types, installers, relationships, support and notifications.",
       },
-      { property: "og:title", content: "Dashboard — Manufacturer Panel" },
-      { property: "og:description", content: "Operational overview of the GSM Systems BLE device fleet." },
+      { property: "og:title", content: "Dashboard | Manufacturer Panel" },
+      { property: "og:description", content: "Operational overview of the ConfigGate BLE device fleet." },
     ],
   }),
   component: DashboardPage,

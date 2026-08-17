@@ -11,30 +11,26 @@ import { toUserMessage } from "@/services/client";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Sign in — Manufacturer Panel" },
-      { name: "description", content: "Sign in to the GSM Systems Manufacturer Panel to manage devices, BLE profiles and access." },
-      { property: "og:title", content: "Sign in — Manufacturer Panel" },
-      { property: "og:description", content: "Secure access to the GSM Systems Manufacturer Panel." },
+      { title: "Sign in | Manufacturer Panel" },
+      { name: "description", content: "Sign in to the ConfigGate Manufacturer Panel to manage devices, BLE profiles and access." },
+      { property: "og:title", content: "Sign in | Manufacturer Panel" },
+      { property: "og:description", content: "Secure access to the ConfigGate Manufacturer Panel." },
     ],
   }),
   component: LoginPage,
 });
 
 const schema = z.object({
-  identifier: z
-    .string()
-    .trim()
-    .min(1, "Please enter your email or mobile number.")
-    .max(255, "This value is too long."),
+  email: z.string().trim().email("Please enter a valid email address."),
   password: z.string().min(6, "Password must be at least 6 characters."),
 });
 
 function LoginPage() {
   const { session, ready, signIn } = useAuth();
   const navigate = useNavigate();
-  const [identifier, setIdentifier] = useState("aparna.rao@gsmsystems.io");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{ identifier?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -43,17 +39,17 @@ function LoginPage() {
     if (ready && session) navigate({ to: "/", replace: true });
   }, [ready, session, navigate]);
 
-  const parsed = schema.safeParse({ identifier, password });
+  const parsed = schema.safeParse({ email, password });
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
-    const result = schema.safeParse({ identifier, password });
+    const result = schema.safeParse({ email, password });
     if (!result.success) {
-      const fieldErrors: { identifier?: string; password?: string } = {};
+      const fieldErrors: { email?: string; password?: string } = {};
       for (const issue of result.error.issues) {
         const key = issue.path[0];
-        if (key === "identifier") fieldErrors.identifier = issue.message;
+        if (key === "email") fieldErrors.email = issue.message;
         if (key === "password") fieldErrors.password = issue.message;
       }
       setErrors(fieldErrors);
@@ -62,7 +58,7 @@ function LoginPage() {
     setErrors({});
     setLoading(true);
     try {
-      await signIn(identifier, password);
+      await signIn(email, password);
       navigate({ to: "/", replace: true });
     } catch (error) {
       setFormError(toUserMessage(error, "Unable to sign in right now. Please try again."));
@@ -80,14 +76,14 @@ function LoginPage() {
           </div>
           <div>
             <p className="font-display text-lg font-semibold text-primary-foreground">Manufacturer Panel</p>
-            <p className="text-xs uppercase tracking-[0.18em] text-primary-foreground/70">GSM Systems</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-primary-foreground/70">ConfigGate</p>
           </div>
         </div>
 
         <div className="relative flex flex-1 items-center justify-center px-4 py-10">
           <img
             src="/without_bg_logo.png"
-            alt="GSM Systems"
+            alt="ConfigGate"
             className="h-56 w-auto max-w-[92%] object-contain sm:h-64 lg:h-80 xl:h-96"
           />
         </div>
@@ -115,17 +111,18 @@ function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="identifier">Email or mobile number</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="identifier"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 autoComplete="username"
-                aria-invalid={!!errors.identifier}
-                placeholder="name@company.com or mobile number"
+                aria-invalid={!!errors.email}
+                placeholder="name@company.com"
                 className="bg-background"
               />
-              {errors.identifier && <p className="text-xs text-destructive">{errors.identifier}</p>}
+              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
             </div>
 
             <div className="space-y-2">

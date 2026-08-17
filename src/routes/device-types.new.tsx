@@ -18,7 +18,7 @@ import { DEVICE_CATEGORIES, type DeviceCategory } from "@/types/entities";
 export const Route = createFileRoute("/device-types/new")({
   head: () => ({
     meta: [
-      { title: "New Device Type | Manufacturer Panel | GSM Systems" },
+      { title: "New Device Type | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Create a new device type with claim rules and RSSI thresholds." },
       { property: "og:title", content: "New Device Type | Manufacturer Panel" },
       { property: "og:description", content: "Create a device type in the Manufacturer Panel." },

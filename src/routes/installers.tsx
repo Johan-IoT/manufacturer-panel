@@ -10,9 +10,9 @@ import type { AppUser } from "@/types/entities";
 export const Route = createFileRoute("/installers")({
   head: () => ({
     meta: [
-      { title: "Installers — Manufacturer Panel | GSM Systems" },
+      { title: "Installers | Manufacturer Panel | ConfigGate" },
       { name: "description", content: "Installer accounts and the devices they currently have access to." },
-      { property: "og:title", content: "Installers — Manufacturer Panel" },
+      { property: "og:title", content: "Installers | Manufacturer Panel" },
       { property: "og:description", content: "Installer coverage across the device fleet." },
     ],
   }),
