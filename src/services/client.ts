@@ -61,6 +61,25 @@ export function clearAuthTokens() {
 
 let refreshPromise: Promise<boolean> | null = null;
 
+type UnauthorizedListener = () => void;
+const unauthorizedListeners = new Set<UnauthorizedListener>();
+
+/** Subscribe when refresh fails and the user must sign in again. */
+export function onUnauthorized(listener: UnauthorizedListener): () => void {
+  unauthorizedListeners.add(listener);
+  return () => unauthorizedListeners.delete(listener);
+}
+
+function emitUnauthorized() {
+  clearAuthTokens();
+  unauthorizedListeners.forEach((listener) => listener());
+}
+
+/** Attempts to obtain a new access token from the stored refresh token. */
+export async function tryRefreshAccessToken(): Promise<boolean> {
+  return refreshAccessToken();
+}
+
 async function refreshAccessToken(): Promise<boolean> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return false;
@@ -127,7 +146,7 @@ export async function apiFetch<T>(
     if (refreshed) {
       return apiFetch<T>(path, options, false);
     }
-    clearAuthTokens();
+    emitUnauthorized();
   }
 
   if (!response.ok) {

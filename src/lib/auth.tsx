@@ -1,5 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { authService } from "@/services";
+import {
+  getAccessToken,
+  onUnauthorized,
+  tryRefreshAccessToken,
+} from "@/services/client";
 import type { Session } from "@/types/entities";
 
 /** Centralized authorization. Convenience layer only — the backend is authoritative. */
@@ -36,12 +43,46 @@ const noPermissions: Permissions = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setSession(authService.restore());
-    setReady(true);
+    return onUnauthorized(() => {
+      authService.signOut();
+      setSession(null);
+      queryClient.clear();
+      toast.error("Your session has expired. Please sign in again.");
+    });
+  }, [queryClient]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const restored = authService.restore();
+      if (!restored) {
+        if (!cancelled) setReady(true);
+        return;
+      }
+      if (!getAccessToken()) {
+        const refreshed = await tryRefreshAccessToken();
+        if (!refreshed) {
+          authService.signOut();
+          if (!cancelled) {
+            setSession(null);
+            setReady(true);
+          }
+          return;
+        }
+      }
+      if (!cancelled) {
+        setSession(restored);
+        setReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
