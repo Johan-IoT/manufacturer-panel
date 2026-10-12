@@ -138,11 +138,65 @@ export type DeliveryStatus =
   | "Invalid Token"
   | "Expired";
 
+export type NotificationType =
+  | "General"
+  | "DeviceStatus"
+  | "DeviceAlarm"
+  | "Configuration"
+  | "Authorization"
+  | "DeviceShared"
+  | "SupportMessage"
+  | "SupportStatus"
+  | "Security"
+  | "System";
+
+export const NOTIFICATION_TYPES: NotificationType[] = [
+  "General",
+  "DeviceStatus",
+  "DeviceAlarm",
+  "Configuration",
+  "Authorization",
+  "DeviceShared",
+  "SupportMessage",
+  "SupportStatus",
+  "Security",
+  "System",
+];
+
+export type NotificationPriority = "Low" | "Normal" | "High" | "Critical";
+
+export const NOTIFICATION_PRIORITIES: NotificationPriority[] = [
+  "Low",
+  "Normal",
+  "High",
+  "Critical",
+];
+
+export type NotificationActionType =
+  | "None"
+  | "OpenDevice"
+  | "OpenConfiguration"
+  | "OpenSupportThread"
+  | "OpenMessages"
+  | "OpenUrl";
+
+export const NOTIFICATION_ACTION_TYPES: NotificationActionType[] = [
+  "None",
+  "OpenDevice",
+  "OpenConfiguration",
+  "OpenSupportThread",
+  "OpenMessages",
+  "OpenUrl",
+];
+
 export interface Notification {
   id: string;
   Title: string;
   Body: string;
-  NotificationType: "System" | "DeviceAlert" | "Support" | "Account";
+  NotificationType: NotificationType;
+  Priority: NotificationPriority;
+  ActionType: NotificationActionType;
+  ActionValue: string | null;
   CreatedAt: string;
 }
 

@@ -17,7 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { relationshipService, userService } from "@/services";
 import { toUserMessage } from "@/services/client";
 import { useAuth, usePermissions } from "@/lib/auth";
-import { revokeAccessCopy } from "@/lib/action-copy";
+import { revokeAccessActionLabel, revokeAccessCopy } from "@/lib/action-copy";
 import type { DeviceUserLink, LinkType } from "@/types/entities";
 
 export const Route = createFileRoute("/relationships")({
@@ -139,7 +139,7 @@ function RelationshipsPage() {
                 action={
                   permissions.canManageRelationships && link.Active ? (
                     <Button variant="destructiveOutline" size="sm" onClick={() => setRevokeLink(link)}>
-                      Revoke access
+                      {revokeAccessActionLabel(link)}
                     </Button>
                   ) : undefined
                 }

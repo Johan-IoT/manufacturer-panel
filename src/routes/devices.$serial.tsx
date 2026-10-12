@@ -16,7 +16,7 @@ import { bleProfileService, deviceService, deviceTypeService, relationshipServic
 import { toUserMessage } from "@/services/client";
 import { formatDate, formatDateTime, maskValue } from "@/lib/format";
 import { usePermissions } from "@/lib/auth";
-import { revokeAccessCopy } from "@/lib/action-copy";
+import { revokeAccessActionLabel, revokeAccessCopy } from "@/lib/action-copy";
 import type { DeviceUserLink } from "@/types/entities";
 
 export const Route = createFileRoute("/devices/$serial")({
@@ -258,7 +258,7 @@ function DeviceDetailPage() {
                     action={
                       permissions.canManageRelationships && link.Active ? (
                         <Button variant="destructiveOutline" size="sm" onClick={() => setRevokeLink(link)}>
-                          {link.LinkType === "Owner" ? "Release ownership" : "Revoke access"}
+                          {revokeAccessActionLabel(link)}
                         </Button>
                       ) : undefined
                     }

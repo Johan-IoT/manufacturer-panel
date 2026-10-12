@@ -267,13 +267,25 @@ export const notificationService = {
   async list() {
     return unwrapData(await apiFetch("/notifications"));
   },
-  async send(input: { recipientUserIds: string[]; title: string; body: string }) {
+  async send(input: {
+    recipientUserIds: string[];
+    title: string;
+    body: string;
+    notificationType: string;
+    priority: string;
+    actionType: string;
+    actionValue?: string | null;
+  }) {
     return apiFetch("/notifications/send", {
       method: "POST",
       body: JSON.stringify({
         recipientUserIds: input.recipientUserIds,
         title: input.title,
         body: input.body,
+        notificationType: input.notificationType,
+        priority: input.priority,
+        actionType: input.actionType,
+        actionValue: input.actionValue ?? null,
       }),
     });
   },
