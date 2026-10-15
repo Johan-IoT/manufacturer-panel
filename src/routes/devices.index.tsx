@@ -3,7 +3,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, Eye, MoreHorizontal, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { Button } from "@/components/ui/button";
@@ -118,7 +117,7 @@ function DevicesPage() {
   ];
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="Devices"
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Devices" }]}
@@ -251,6 +250,6 @@ function DevicesPage() {
         loading={deactivate.isPending}
         onConfirm={() => toDeactivate && deactivate.mutate(toDeactivate.SerialNumber)}
       />
-    </AppShell>
+    </>
   );
 }

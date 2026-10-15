@@ -3,7 +3,6 @@ import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { CapabilityBadges, StatusBadge, Pill } from "@/components/app/badges";
 import { RelationshipCard } from "@/components/app/cards";
@@ -98,7 +97,7 @@ function UserDetailPage() {
   };
 
   return (
-    <AppShell>
+    <>
       <AsyncPageContent
         isLoading={userQuery.isLoading}
         isError={userQuery.isError || !userQuery.data}
@@ -257,6 +256,6 @@ function UserDetailPage() {
         loading={setStatus.isPending}
         onConfirm={() => pendingAction && setStatus.mutate(pendingAction.status)}
       />
-    </AppShell>
+    </>
   );
 }

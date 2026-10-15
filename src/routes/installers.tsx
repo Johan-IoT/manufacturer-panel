@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { Pill } from "@/components/app/badges";
@@ -44,7 +43,7 @@ function InstallersPage() {
   ];
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="Installers"
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Installers" }]}
@@ -71,6 +70,6 @@ function InstallersPage() {
         onRowClick={(u) => navigate({ to: "/users/$userId", params: { userId: u.id } })}
         emptyTitle="No installers"
       />
-    </AppShell>
+    </>
   );
 }

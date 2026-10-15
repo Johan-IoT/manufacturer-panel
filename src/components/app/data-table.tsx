@@ -195,7 +195,7 @@ export function DataTable<T>({
         <div className="ml-auto flex items-center gap-2">{toolbarExtra}</div>
       </TableToolbar>
 
-      {isLoading ? (
+      {isLoading && (data == null || data.length === 0) ? (
         <div className="animate-content-enter">
           <LoadingState />
         </div>

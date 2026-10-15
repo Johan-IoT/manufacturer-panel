@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Bell, Cpu, LifeBuoy, Link2, Radar, ShieldCheck, Wrench } from "lucide-react";
 import { DeviceStatusPie3D, RegistrationTrendAreaChart } from "@/components/app/dashboard-charts";
 import { AsyncPageContent, AnimatedStagger } from "@/components/app/page-layout";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { StatCard } from "@/components/app/cards";
 import { Pill, RelationshipBadge } from "@/components/app/badges";
@@ -44,7 +43,7 @@ function DashboardPage() {
   });
 
   return (
-    <AppShell>
+    <>
       <PageHeader title="Dashboard" breadcrumbs={[{ label: "Manufacturer Panel" }, { label: "Dashboard" }]} />
 
       <AsyncPageContent
@@ -179,6 +178,6 @@ function DashboardPage() {
           </div>
         )}
       </AsyncPageContent>
-    </AppShell>
+    </>
   );
 }

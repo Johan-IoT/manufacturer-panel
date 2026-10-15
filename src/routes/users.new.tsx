@@ -3,7 +3,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,7 +98,7 @@ function CreateInstallerPage() {
   );
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="Create Installer"
         breadcrumbs={[
@@ -141,6 +140,6 @@ function CreateInstallerPage() {
           </Button>
         </div>
       </form>
-    </AppShell>
+    </>
   );
 }

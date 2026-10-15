@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { Pill, ThreadStatusBadge } from "@/components/app/badges";
 import { EmptyState } from "@/components/app/states";
@@ -140,7 +139,7 @@ function SupportPage() {
   const currentStatus = selectedConversation?.status;
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="Support"
         description="One inbox row per app user. Older duplicate threads are merged in the timeline."
@@ -308,6 +307,6 @@ function SupportPage() {
         loading={setStatus.isPending}
         onConfirm={() => pendingStatus && setStatus.mutate(pendingStatus)}
       />
-    </AppShell>
+    </>
   );
 }

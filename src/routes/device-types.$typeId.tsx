@@ -2,7 +2,6 @@ import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { ActiveBadge, CategoryBadge, DeviceTypeBadge, Pill } from "@/components/app/badges";
 import { BleProfileEditor } from "@/components/app/ble-profile-editor";
@@ -90,7 +89,7 @@ function DeviceTypeDetailPage() {
       metadata.Active !== typeQuery.data.Active);
 
   return (
-    <AppShell>
+    <>
       <AsyncPageContent
         isLoading={typeQuery.isLoading}
         isError={typeQuery.isError || !typeQuery.data}
@@ -268,6 +267,6 @@ function DeviceTypeDetailPage() {
           </>
         )}
       </AsyncPageContent>
-    </AppShell>
+    </>
   );
 }

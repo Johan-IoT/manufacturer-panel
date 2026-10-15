@@ -3,7 +3,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,7 +88,7 @@ function NewDeviceTypePage() {
   };
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="New Device Type"
         breadcrumbs={[
@@ -208,6 +207,6 @@ function NewDeviceTypePage() {
           </Button>
         </div>
       </form>
-    </AppShell>
+    </>
   );
 }

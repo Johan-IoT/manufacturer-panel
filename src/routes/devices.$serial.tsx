@@ -3,7 +3,6 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ban, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -112,17 +111,17 @@ function DeviceDetailPage() {
 
   if (deviceQuery.isLoading) {
     return (
-      <AppShell>
+      <>
         <AsyncPageContent isLoading isError={false} loadingLabel="Loading device">
           {null}
         </AsyncPageContent>
-      </AppShell>
+      </>
     );
   }
 
   if (deviceQuery.isError || !deviceQuery.data) {
     return (
-      <AppShell>
+      <>
         <AsyncPageContent
           isLoading={false}
           isError
@@ -131,7 +130,7 @@ function DeviceDetailPage() {
         >
           {null}
         </AsyncPageContent>
-      </AppShell>
+      </>
     );
   }
 
@@ -142,7 +141,7 @@ function DeviceDetailPage() {
   };
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title={<span className="font-mono">{device.SerialNumber}</span>}
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Devices", to: "/devices" }, { label: device.SerialNumber }]}
@@ -310,6 +309,6 @@ function DeviceDetailPage() {
           revoke.mutate(revokeLink);
         }}
       />
-    </AppShell>
+    </>
   );
 }

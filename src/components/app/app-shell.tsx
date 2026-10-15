@@ -9,13 +9,11 @@ import {
   LogOut,
   Menu,
   Radar,
-  Search,
   Users,
   Wrench,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { iconTone, navIconTone } from "@/lib/icon-colors";
 import { useAuth } from "@/lib/auth";
@@ -104,9 +102,7 @@ function BrandMark() {
 export function AppShell({ children }: { children: ReactNode }) {
   const { session, ready, signOut } = useAuth();
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (ready && !session) navigate({ to: "/login", replace: true });
@@ -121,13 +117,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   const user = session.user;
-
-  const onSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!search.trim()) return;
-    navigate({ to: "/devices" });
-    setSearch("");
-  };
 
   const handleSignOut = () => {
     signOut();
@@ -163,16 +152,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)}>
             <Menu className={cn("size-4", iconTone.primary)} />
           </Button>
-          <form onSubmit={onSearch} className="relative hidden max-w-md flex-1 sm:block">
-            <Search className={cn("pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2", iconTone.muted)} />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search devices by serial or name"
-              className="h-9 bg-surface pl-9"
-              aria-label="Search devices"
-            />
-          </form>
           <div className="ml-auto flex items-center gap-1">
             <Button variant="ghost" size="icon" asChild aria-label="Notifications" className="text-warning hover:text-warning">
               <Link to="/notifications">
@@ -191,7 +170,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1600px] px-4 py-6 lg:px-8 lg:py-8">
-          <PageTransition key={pathname}>{children}</PageTransition>
+          <PageTransition>{children}</PageTransition>
         </main>
       </div>
     </div>

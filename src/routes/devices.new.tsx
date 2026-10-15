@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bluetooth, Loader2, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { SerialQrScannerDialog } from "@/components/devices/serial-qr-scanner-dialog";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -133,7 +132,7 @@ function AddDevicePage() {
 
   if (!permissions.canDeactivateDevice) {
     return (
-      <AppShell>
+      <>
         <PageHeader
           title="Add Device"
           breadcrumbs={[
@@ -145,7 +144,7 @@ function AddDevicePage() {
         <p className="text-sm text-muted-foreground">
           Only active Manufacturer accounts can register devices.
         </p>
-      </AppShell>
+      </>
     );
   }
 
@@ -309,7 +308,7 @@ function AddDevicePage() {
   }
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="Add Device"
         breadcrumbs={[
@@ -588,7 +587,7 @@ function AddDevicePage() {
           toast.success("Serial number captured from QR code.");
         }}
       />
-    </AppShell>
+    </>
   );
 }
 

@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { RelationshipCard } from "@/components/app/cards";
 import { ConfirmationDialog, FormModal } from "@/components/app/dialogs";
@@ -102,7 +101,7 @@ function RelationshipsPage() {
   const canSubmitGrant = grantForm.DeviceSerialNumber.trim() && grantForm.AppUserId;
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="Relationships"
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Relationships" }]}
@@ -239,6 +238,6 @@ function RelationshipsPage() {
         loading={grant.isPending}
         onConfirm={() => grant.mutate()}
       />
-    </AppShell>
+    </>
   );
 }

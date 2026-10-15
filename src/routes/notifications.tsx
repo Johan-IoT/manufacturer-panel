@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Bell, Send } from "lucide-react";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { DeliveryStatusBadge, Pill, ReadStateBadge } from "@/components/app/badges";
 import { DataTable, type Column } from "@/components/app/data-table";
@@ -287,7 +286,10 @@ function NotificationsPage() {
       resetForm();
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
-    onError: (e) => toast.error(toUserMessage(e, "Unable to send this notification. Please try again.")),
+    onError: (e) => {
+      setConfirmSend(false);
+      toast.error(toUserMessage(e, "Unable to send this notification. Please try again."));
+    },
   });
 
   const recipientSummary = useMemo(() => {
@@ -379,7 +381,7 @@ function NotificationsPage() {
   ];
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="Notifications"
         description="Send push and in-app alerts to mobile users. Each row is one message, grouped by send."
@@ -618,7 +620,7 @@ function NotificationsPage() {
         loading={send.isPending}
         onConfirm={() => send.mutate()}
       />
-    </AppShell>
+    </>
   );
 }
 

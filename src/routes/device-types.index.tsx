@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { AppShell } from "@/components/app/app-shell";
 import { PageHeader } from "@/components/app/page-header";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { ActiveBadge, CategoryBadge, DeviceTypeBadge, Pill } from "@/components/app/badges";
@@ -42,7 +41,7 @@ function DeviceTypesPage() {
   ];
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="Device Types"
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Device Types" }]}
@@ -83,6 +82,6 @@ function DeviceTypesPage() {
         onRowClick={(t) => navigate({ to: "/device-types/$typeId", params: { typeId: t.id } })}
         emptyTitle="No device types"
       />
-    </AppShell>
+    </>
   );
 }

@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import { AuthenticatedLayout } from "@/components/app/authenticated-layout";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -119,8 +120,9 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <AuthenticatedLayout>
+          <Outlet />
+        </AuthenticatedLayout>
         <Toaster position="top-right" richColors duration={4000} visibleToasts={3} />
       </AuthProvider>
     </QueryClientProvider>
