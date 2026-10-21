@@ -1,21 +1,31 @@
 import { useState } from "react";
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, ExternalLink } from "lucide-react";
+import { Archive, ExternalLink, Pencil, ShieldOff, Undo2, Unlink } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ActiveBadge, DeviceStatus, DeviceTypeBadge } from "@/components/app/badges";
+import { DeviceStatus, DeviceTypeBadge } from "@/components/app/badges";
 import { RelationshipCard } from "@/components/app/cards";
 import { ConfirmationDialog } from "@/components/app/dialogs";
 import { EmptyState } from "@/components/app/states";
+import { DeviceConfigurationPanel } from "@/components/devices/device-configuration-panel";
+import { useDeviceStatusAction } from "@/components/devices/device-status-action";
+import { EditDeviceDialog } from "@/components/devices/edit-device-dialog";
+import { DeviceConfigHistory } from "@/components/devices/device-config-history";
 import { AnimatedContent, AnimatedStagger, AsyncPageContent } from "@/components/app/page-layout";
 import { bleProfileService, deviceService, deviceTypeService, relationshipService, userService } from "@/services";
 import { toUserMessage } from "@/services/client";
 import { formatDate, formatDateTime, maskValue } from "@/lib/format";
 import { usePermissions } from "@/lib/auth";
 import { revokeAccessActionLabel, revokeAccessCopy } from "@/lib/action-copy";
+import {
+  DEVICE_STATUS_ACTION_COPY,
+  canDecommission,
+  canReinstate,
+  canSuspend,
+} from "@/lib/device-state";
 import type { DeviceUserLink } from "@/types/entities";
 
 export const Route = createFileRoute("/devices/$serial")({
@@ -40,9 +50,9 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 function formatCoordinate(value: number | string | null | undefined): string {
-  if (value == null || value === "") return "—";
+  if (value == null || value === "") return "-";
   const num = typeof value === "number" ? value : Number(value);
-  if (Number.isNaN(num)) return "—";
+  if (Number.isNaN(num)) return "-";
   return num.toFixed(6);
 }
 
@@ -61,8 +71,9 @@ function DeviceDetailPage() {
   const { serial } = useParams({ from: "/devices/$serial" });
   const permissions = usePermissions();
   const queryClient = useQueryClient();
-  const [confirmDeactivate, setConfirmDeactivate] = useState(false);
+  const statusAction = useDeviceStatusAction();
   const [revokeLink, setRevokeLink] = useState<DeviceUserLink | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const deviceQuery = useQuery({ queryKey: ["device", serial], queryFn: () => deviceService.get(serial) });
   const typesQuery = useQuery({ queryKey: ["device-types"], queryFn: () => deviceTypeService.list() });
@@ -78,16 +89,6 @@ function DeviceDetailPage() {
     enabled: !!type,
   });
 
-  const deactivate = useMutation({
-    mutationFn: () => deviceService.deactivate(serial),
-    onSuccess: () => {
-      toast.success("Device deactivated successfully.");
-      setConfirmDeactivate(false);
-      void queryClient.invalidateQueries({ queryKey: ["device", serial] });
-    },
-    onError: (e) => toast.error(toUserMessage(e, "Unable to deactivate this device. Please try again.")),
-  });
-
   const revoke = useMutation({
     mutationFn: (link: DeviceUserLink) => relationshipService.revoke(link.id),
     onSuccess: (_data, link) => {
@@ -101,13 +102,14 @@ function DeviceDetailPage() {
   const releaseOwnership = useMutation({
     mutationFn: () => deviceService.releaseOwnership(serial),
     onSuccess: () => {
-      toast.success("Ownership released successfully.");
+      toast.success("Device released successfully.");
       setRevokeLink(null);
       void queryClient.invalidateQueries({ queryKey: ["device", serial] });
       void queryClient.invalidateQueries({ queryKey: ["links", "device", serial] });
     },
     onError: (e) => toast.error(toUserMessage(e, "Unable to release ownership. Please try again.")),
   });
+
 
   if (deviceQuery.isLoading) {
     return (
@@ -135,6 +137,7 @@ function DeviceDetailPage() {
   }
 
   const device = deviceQuery.data;
+  const ownerLink = (linksQuery.data ?? []).find((l) => l.LinkType === "Owner" && l.Active) ?? null;
   const userName = (id: string) => {
     const u = usersQuery.data?.find((x) => x.id === id);
     return u ? `${u.FirstName} ${u.LastName}` : "Unknown user";
@@ -148,15 +151,36 @@ function DeviceDetailPage() {
         meta={
           <>
             <DeviceStatus status={device.DeviceStatus} />
-            <ActiveBadge active={device.Active} />
             {type && <DeviceTypeBadge code={type.TypeCode} name={type.TypeName} />}
           </>
         }
         actions={
-          permissions.canDeactivateDevice && device.Active ? (
-            <Button variant="destructiveOutline" onClick={() => setConfirmDeactivate(true)}>
-              <Ban className="size-4" /> Deactivate device
-            </Button>
+          permissions.canDeactivateDevice && device.DeviceStatus !== "Decommissioned" ? (
+            <div className="flex flex-wrap gap-2">
+              {permissions.canManageRelationships && ownerLink && device.DeviceStatus !== "Suspended" && (
+                <Button variant="outline" onClick={() => setRevokeLink(ownerLink)}>
+                  <Unlink className="size-4" /> Release Device
+                </Button>
+              )}
+              {canReinstate(device.DeviceStatus) && (
+                <Button variant="outline" onClick={() => statusAction.request("reinstate", device.SerialNumber)}>
+                  <Undo2 className="size-4" /> {DEVICE_STATUS_ACTION_COPY.reinstate.menuLabel}
+                </Button>
+              )}
+              {canSuspend(device.DeviceStatus) && (
+                <Button variant="outline" onClick={() => statusAction.request("suspend", device.SerialNumber)}>
+                  <ShieldOff className="size-4" /> {DEVICE_STATUS_ACTION_COPY.suspend.menuLabel}
+                </Button>
+              )}
+              {canDecommission(device.DeviceStatus) && (
+                <Button
+                  variant="destructiveOutline"
+                  onClick={() => statusAction.request("decommission", device.SerialNumber)}
+                >
+                  <Archive className="size-4" /> {DEVICE_STATUS_ACTION_COPY.decommission.menuLabel}
+                </Button>
+              )}
+            </div>
           ) : undefined
         }
       />
@@ -164,14 +188,28 @@ function DeviceDetailPage() {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="configuration">Configuration</TabsTrigger>
           <TabsTrigger value="relationships">Relationships</TabsTrigger>
+          <TabsTrigger value="history">Config History</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="configuration" className="mt-4">
+          <DeviceConfigurationPanel serial={device.SerialNumber} canEdit={permissions.canEditDeviceConfiguration} />
+        </TabsContent>
 
         <TabsContent value="overview" className="mt-4 grid gap-4 xl:grid-cols-2">
           <section className="rounded-lg border border-border bg-surface p-4 shadow-none">
-            <h2 className="mb-3 text-sm font-semibold">Hardware & firmware</h2>
-            <Row label="Firmware Version" value={device.FirmwareVersion} />
-            <Row label="Hardware Version" value={device.HardwareVersion} />
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold">Device details</h2>
+              {permissions.canEditDeviceConfiguration && (
+                <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+                  <Pencil className="size-4" /> Edit
+                </Button>
+              )}
+            </div>
+            <Row label="Device Name" value={device.DeviceName || device.SerialNumber} />
+            <Row label="Firmware Version" value={<span className="font-mono">{device.FirmwareVersion || "Not set"}</span>} />
+            <Row label="Hardware Version" value={<span className="font-mono">{device.HardwareVersion || "Not set"}</span>} />
             <Row label="Manufactured At" value={formatDate(device.ManufacturedAt)} />
             <Row label="Registered At" value={formatDate(device.RegisteredAt)} />
             <Row label="QR Code Value" value={<span className="font-mono">{maskValue(device.QrCodeValue, 6)}</span>} />
@@ -228,12 +266,16 @@ function DeviceDetailPage() {
             <h2 className="mb-3 text-sm font-semibold">Recent activity & diagnostics</h2>
             <Row label="Last BLE Connection" value={formatDateTime(device.LastBleConnectionAt)} />
             <Row label="Last Server Contact" value={formatDateTime(device.LastServerContactAt)} />
-            <Row label="Last Known BLE Name (diagnostic)" value={device.LastKnownBleName ?? "—"} />
+            <Row label="Last Known BLE Name (diagnostic)" value={device.LastKnownBleName ?? "-"} />
             <Row
               label="Last Known Android MAC (diagnostic)"
               value={<span className="font-mono">{maskValue(device.LastKnownAndroidMac, 5)}</span>}
             />
           </section>
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4">
+          <DeviceConfigHistory serial={device.SerialNumber} />
         </TabsContent>
 
         <TabsContent value="relationships" className="mt-4 space-y-3">
@@ -269,16 +311,9 @@ function DeviceDetailPage() {
         </TabsContent>
       </Tabs>
 
-      <ConfirmationDialog
-        open={confirmDeactivate}
-        onOpenChange={setConfirmDeactivate}
-        title="Deactivate this device?"
-        description={`Are you sure you want to deactivate ${device.SerialNumber}? History is preserved; the device is never deleted.`}
-        confirmLabel="Deactivate device"
-        destructive
-        loading={deactivate.isPending}
-        onConfirm={() => deactivate.mutate()}
-      />
+      {statusAction.dialog}
+
+      <EditDeviceDialog device={device} open={editOpen} onOpenChange={setEditOpen} />
 
       <ConfirmationDialog
         open={!!revokeLink}

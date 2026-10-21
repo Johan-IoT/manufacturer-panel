@@ -2,17 +2,21 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { z } from "zod";
-import { Bell, Send } from "lucide-react";
+import { Bell, Send, Settings } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
 import { DeliveryStatusBadge, Pill, ReadStateBadge } from "@/components/app/badges";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { FormModal, ConfirmationDialog } from "@/components/app/dialogs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  EMPTY_NOTIFICATION_MESSAGE,
+  NotificationMessageFields,
+  isNotificationMessageValid,
+  notificationPayload,
+  type NotificationMessage,
+} from "@/components/notifications/notification-message-fields";
+import { NotificationSettingsDialog } from "@/components/notifications/notification-settings-dialog";
+import { RecipientPicker, type RecipientResult } from "@/components/notifications/recipient-picker";
 import {
   Sheet,
   SheetContent,
@@ -20,26 +24,35 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { notificationService, userService } from "@/services";
+import { notificationService } from "@/services";
 import { toUserMessage } from "@/services/client";
 import { formatDateTime } from "@/lib/format";
+import { notificationStats, PUSH_NOT_DELIVERED_STATUSES } from "@/lib/notification-stats";
 import {
-  NOTIFICATION_ACTION_TYPES,
   NOTIFICATION_PRIORITIES,
   NOTIFICATION_TYPES,
   type DeliveryStatus,
   type Notification,
-  type NotificationActionType,
   type NotificationPriority,
-  type NotificationType,
   type PushNotificationDelivery,
 } from "@/types/entities";
 
+interface NotificationsSearch {
+  /** Dashboard quick links: unread = has unread recipients, push = push not delivered. */
+  view?: "unread" | "push" | undefined;
+}
+
 export const Route = createFileRoute("/notifications")({
+  validateSearch: (search: Record<string, unknown>): NotificationsSearch => ({
+    view: search["view"] === "unread" || search["view"] === "push" ? search["view"] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Notifications | Manufacturer Panel | ConfigGate" },
-      { name: "description", content: "Review sent notifications and broadcast new messages to app users." },
+      {
+        name: "description",
+        content: "Review sent notifications and broadcast new messages to app users.",
+      },
       { property: "og:title", content: "Notifications | Manufacturer Panel" },
       { property: "og:description", content: "Notification history and composer." },
     ],
@@ -56,7 +69,7 @@ type SentNotificationRow = {
     ReadAt: string | null;
   };
   notification: Notification;
-  recipient: { FirstName: string; LastName: string; Email: string } | null;
+  recipient: { FirstName: string; LastName: string; Email: string; CompanyName?: string } | null;
   deliveries: PushNotificationDelivery[];
 };
 
@@ -66,43 +79,13 @@ type NotificationCampaign = {
   sends: SentNotificationRow[];
 };
 
-const schema = z
-  .object({
-    title: z.string().trim().min(1, "Title is required.").max(120),
-    body: z.string().trim().min(1, "Message is required.").max(1000),
-    recipientUserIds: z.array(z.string()).min(1, "Select at least one recipient."),
-    notificationType: z.enum(NOTIFICATION_TYPES as [NotificationType, ...NotificationType[]]),
-    priority: z.enum(NOTIFICATION_PRIORITIES as [NotificationPriority, ...NotificationPriority[]]),
-    actionType: z.enum(NOTIFICATION_ACTION_TYPES as [NotificationActionType, ...NotificationActionType[]]),
-    actionValue: z.string().trim().max(500),
-  })
-  .superRefine((value, ctx) => {
-    const needsValue =
-      value.actionType !== "None" && value.actionType !== "OpenMessages";
-    if (needsValue && !value.actionValue) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["actionValue"],
-        message: "Action value is required for the selected action.",
-      });
-    }
-  });
-
-function actionValueHint(actionType: NotificationActionType): string {
-  switch (actionType) {
-    case "OpenDevice":
-    case "OpenConfiguration":
-      return "Enter device serial number.";
-    case "OpenSupportThread":
-      return "Enter support thread id.";
-    case "OpenMessages":
-      return "Optional. Leave blank or enter a message context.";
-    case "OpenUrl":
-      return "Enter full URL, for example https://example.com";
-    default:
-      return "Not required when action is None.";
-  }
-}
+/** History "Period" filter, in days. */
+const PERIODS = [
+  { value: "1", label: "Last 24 hours" },
+  { value: "7", label: "Last 7 days" },
+  { value: "30", label: "Last 30 days" },
+  { value: "90", label: "Last 90 days" },
+];
 
 function formatAction(notification: Notification): string | null {
   if (notification.ActionType === "None") return null;
@@ -191,93 +174,64 @@ function priorityTone(priority: NotificationPriority): "neutral" | "info" | "war
 
 function NotificationsPage() {
   const queryClient = useQueryClient();
+  const view = Route.useSearch().view;
   const [open, setOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmSend, setConfirmSend] = useState(false);
   const [detailCampaign, setDetailCampaign] = useState<NotificationCampaign | null>(null);
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>([]);
-  const [recipientSearch, setRecipientSearch] = useState("");
-  const [notificationType, setNotificationType] = useState<NotificationType>("General");
-  const [priority, setPriority] = useState<NotificationPriority>("Normal");
-  const [actionType, setActionType] = useState<NotificationActionType>("None");
-  const [actionValue, setActionValue] = useState("");
+  const [message, setMessage] = useState<NotificationMessage>(EMPTY_NOTIFICATION_MESSAGE);
+  const [recipients, setRecipients] = useState<RecipientResult>({
+    recipientIds: [],
+    deviceSerialNumber: null,
+    summary: "No recipients selected",
+  });
+  /** Remounts the recipient picker to clear it after a send. */
+  const [pickerKey, setPickerKey] = useState(0);
 
   const list = useQuery({
     queryKey: ["notifications"],
     queryFn: async () => (await notificationService.list()) as SentNotificationRow[],
   });
-  const users = useQuery({ queryKey: ["users"], queryFn: () => userService.list() });
-  const activeUsers = useMemo(
-    () => (users.data ?? []).filter((user) => user.AccountStatus === "Active"),
-    [users.data],
-  );
-  const filteredRecipients = useMemo(() => {
-    const q = recipientSearch.trim().toLowerCase();
-    if (!q) return activeUsers;
-    return activeUsers.filter(
-      (u) =>
-        u.FirstName.toLowerCase().includes(q) ||
-        u.LastName.toLowerCase().includes(q) ||
-        u.Email.toLowerCase().includes(q),
-    );
-  }, [activeUsers, recipientSearch]);
-
-  const campaigns = useMemo(
-    () => groupSentNotifications(list.data ?? []),
-    [list.data],
-  );
+  const campaigns = useMemo(() => groupSentNotifications(list.data ?? []), [list.data]);
 
   const stats = useMemo(() => {
     const rows = list.data ?? [];
-    const unread = rows.filter((r) => !r.userNotification.IsRead).length;
-    const deliveries = deliverySummary(rows);
+    // Same helper as the dashboard, so both always show the same numbers.
+    const counts = notificationStats(rows);
     return {
       broadcasts: campaigns.length,
       recipients: rows.length,
-      unread,
-      deliveryIssues:
-        deliveries.failed + deliveries.queued + deliveries.inProgress + deliveries.expired,
+      unread: counts.unread,
+      deliveryIssues: counts.notDelivered,
     };
   }, [campaigns.length, list.data]);
 
-  const parsed = schema.safeParse({
-    title,
-    body,
-    recipientUserIds: selectedRecipientIds,
-    notificationType,
-    priority,
-    actionType,
-    actionValue,
-  });
-
-  const resetForm = () => {
-    setTitle("");
-    setBody("");
-    setSelectedRecipientIds([]);
-    setRecipientSearch("");
-    setNotificationType("General");
-    setPriority("Normal");
-    setActionType("None");
-    setActionValue("");
+  // A notification about a device opens that device in the app, unless an action was chosen.
+  const chooseRecipients = (next: RecipientResult) => {
+    setRecipients(next);
+    const serial = next.deviceSerialNumber;
+    if (serial) {
+      setMessage((m) =>
+        m.actionType === "None" || m.actionType === "OpenDevice"
+          ? { ...m, actionType: "OpenDevice", actionValue: serial }
+          : m,
+      );
+    }
   };
 
-  const toggleRecipient = (userId: string) => {
-    setSelectedRecipientIds((current) =>
-      current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId],
-    );
+  const canSend = isNotificationMessageValid(message) && recipients.recipientIds.length > 0;
+
+  const resetForm = () => {
+    setMessage(EMPTY_NOTIFICATION_MESSAGE);
+    setPickerKey((k) => k + 1);
   };
 
   const send = useMutation({
     mutationFn: () =>
       notificationService.send({
-        recipientUserIds: selectedRecipientIds,
-        title: title.trim(),
-        body: body.trim(),
-        notificationType,
-        priority,
-        actionType,
-        actionValue: actionType === "None" ? null : actionValue.trim(),
+        recipientUserIds: recipients.recipientIds,
+        ...notificationPayload(message),
+        deviceSerialNumber: recipients.deviceSerialNumber,
       }),
     onSuccess: () => {
       toast.success("Notification sent successfully.");
@@ -291,15 +245,6 @@ function NotificationsPage() {
       toast.error(toUserMessage(e, "Unable to send this notification. Please try again."));
     },
   });
-
-  const recipientSummary = useMemo(() => {
-    if (selectedRecipientIds.length === 0) return "No recipients selected";
-    if (selectedRecipientIds.length === 1) {
-      const user = activeUsers.find((entry) => entry.id === selectedRecipientIds[0]);
-      return user ? `${user.FirstName} ${user.LastName}` : "1 recipient";
-    }
-    return `${selectedRecipientIds.length} recipients`;
-  }, [activeUsers, selectedRecipientIds]);
 
   const columns: Column<NotificationCampaign>[] = [
     {
@@ -326,6 +271,16 @@ function NotificationsPage() {
       render: (c) => (
         <Pill tone={priorityTone(c.notification.Priority)}>{c.notification.Priority}</Pill>
       ),
+    },
+    {
+      key: "device",
+      header: "Device",
+      render: (c) =>
+        c.notification.DeviceSerialNumber ? (
+          <span className="font-mono text-xs">{c.notification.DeviceSerialNumber}</span>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        ),
     },
     {
       key: "recipients",
@@ -368,7 +323,7 @@ function NotificationsPage() {
         if (summary.delivered > 0) {
           return <Pill tone="success">{summary.delivered} delivered</Pill>;
         }
-        return <span className="text-xs text-muted-foreground">—</span>;
+        return <span className="text-xs text-muted-foreground">-</span>;
       },
     },
     {
@@ -376,21 +331,42 @@ function NotificationsPage() {
       header: "Sent",
       sortValue: (c) => c.notification.CreatedAt,
       className: "whitespace-nowrap text-muted-foreground text-xs",
-      render: (c) => formatDateTime(c.notification.CreatedAt),
+      render: (c) => (
+        <div>
+          <p>{formatDateTime(c.notification.CreatedAt)}</p>
+          {c.notification.SentBy && <p>by {c.notification.SentBy}</p>}
+        </div>
+      ),
     },
   ];
+
+  const senders = [
+    ...new Set(campaigns.map((c) => c.notification.SentBy).filter((n): n is string => !!n)),
+  ].sort();
+  const companies = [
+    ...new Set(
+      (list.data ?? [])
+        .map((r) => r.recipient?.CompanyName?.trim())
+        .filter((n): n is string => !!n),
+    ),
+  ].sort();
 
   return (
     <>
       <PageHeader
         title="Notifications"
-        description="Send push and in-app alerts to mobile users. Each row is one message, grouped by send."
         breadcrumbs={[{ label: "Manufacturer Panel", to: "/" }, { label: "Notifications" }]}
         actions={
-          <Button onClick={() => setOpen(true)} variant="success">
-            <Send className="mr-2 size-4" />
-            New notification
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setSettingsOpen(true)}>
+              <Settings className="mr-2 size-4" />
+              Settings
+            </Button>
+            <Button onClick={() => setOpen(true)} variant="success">
+              <Send className="mr-2 size-4" />
+              New notification
+            </Button>
+          </div>
         }
       />
 
@@ -398,7 +374,11 @@ function NotificationsPage() {
         <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Messages sent" value={String(stats.broadcasts)} />
           <StatCard label="Recipient deliveries" value={String(stats.recipients)} />
-          <StatCard label="Unread in app" value={String(stats.unread)} highlight={stats.unread > 0} />
+          <StatCard
+            label="Unread in app"
+            value={String(stats.unread)}
+            highlight={stats.unread > 0}
+          />
           <StatCard
             label="Push pending or failed"
             value={String(stats.deliveryIssues)}
@@ -408,19 +388,31 @@ function NotificationsPage() {
       )}
 
       <DataTable
+        key={view ?? "all"}
+        initialFilterValues={
+          view === "unread"
+            ? { read: "unread" }
+            : view === "push"
+              ? { push: "not_delivered" }
+              : undefined
+        }
         data={campaigns}
         columns={columns}
         rowKey={(c) => c.id}
         isLoading={list.isLoading}
         isError={list.isError}
         onRetry={() => void list.refetch()}
-        searchPlaceholder="Search title, message, or recipient"
+        searchPlaceholder="Search title, message, device or recipient"
         searchFields={[
           (c) => c.notification.Title,
           (c) => c.notification.Body,
+          (c) => c.notification.DeviceSerialNumber ?? "",
           (c) =>
             c.sends
-              .map((s) => `${s.recipient?.FirstName ?? ""} ${s.recipient?.LastName ?? ""} ${s.recipient?.Email ?? ""}`)
+              .map(
+                (s) =>
+                  `${s.recipient?.FirstName ?? ""} ${s.recipient?.LastName ?? ""} ${s.recipient?.Email ?? ""}`,
+              )
               .join(" "),
         ]}
         filters={[
@@ -437,6 +429,38 @@ function NotificationsPage() {
             predicate: (c, v) => c.notification.Priority === v,
           },
           {
+            key: "period",
+            label: "Period",
+            options: PERIODS,
+            predicate: (c, v) =>
+              Date.now() - new Date(c.notification.CreatedAt).getTime() <=
+              Number(v) * 24 * 60 * 60 * 1000,
+          },
+          {
+            key: "sender",
+            label: "Sent by",
+            options: senders.map((n) => ({ value: n, label: n })),
+            predicate: (c, v) => c.notification.SentBy === v,
+          },
+          {
+            key: "company",
+            label: "Company",
+            options: companies.map((n) => ({ value: n, label: n })),
+            predicate: (c, v) => c.sends.some((s) => s.recipient?.CompanyName?.trim() === v),
+          },
+          {
+            key: "device",
+            label: "Device",
+            options: [
+              { value: "yes", label: "About a device" },
+              { value: "no", label: "General" },
+            ],
+            predicate: (c, v) =>
+              v === "yes"
+                ? !!c.notification.DeviceSerialNumber
+                : !c.notification.DeviceSerialNumber,
+          },
+          {
             key: "read",
             label: "Read status",
             options: [
@@ -448,10 +472,18 @@ function NotificationsPage() {
               return v === "unread" ? anyUnread : !anyUnread;
             },
           },
+          {
+            key: "push",
+            label: "Push delivery",
+            options: [{ value: "not_delivered", label: "Pending or failed" }],
+            predicate: (c) =>
+              c.sends.some((s) =>
+                s.deliveries.some((d) => PUSH_NOT_DELIVERED_STATUSES.includes(d.DeliveryStatus)),
+              ),
+          },
         ]}
         onRowClick={(c) => setDetailCampaign(c)}
         emptyTitle="No notifications yet"
-        emptyDescription="Send your first notification to app users with the New notification button."
       />
 
       <CampaignDetailSheet
@@ -459,163 +491,34 @@ function NotificationsPage() {
         onOpenChange={(open) => !open && setDetailCampaign(null)}
       />
 
-      <FormModal open={open} onOpenChange={setOpen} title="Send notification">
-        <div className="space-y-1.5">
-          <Label htmlFor="n-title">Title</Label>
-          <Input
-            id="n-title"
-            className="bg-background"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={120}
-            placeholder="Short headline shown on the device"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="n-body">Message</Label>
-          <Textarea
-            id="n-body"
-            className="bg-background"
-            rows={4}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            maxLength={1000}
-            placeholder="Full message body"
-          />
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="n-type">Notification type</Label>
-            <Select value={notificationType} onValueChange={(value) => setNotificationType(value as NotificationType)}>
-              <SelectTrigger id="n-type" className="bg-background">
-                <SelectValue placeholder="Select type" />
-              </SelectTrigger>
-              <SelectContent>
-                {NOTIFICATION_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <FormModal open={open} onOpenChange={setOpen} title="Send notification" wide>
+        <div className="space-y-5">
+          <RecipientPicker key={pickerKey} onChange={chooseRecipients} />
+          <div className="border-t border-border pt-4">
+            <NotificationMessageFields value={message} onChange={setMessage} />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="n-priority">Priority</Label>
-            <Select value={priority} onValueChange={(value) => setPriority(value as NotificationPriority)}>
-              <SelectTrigger id="n-priority" className="bg-background">
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                {NOTIFICATION_PRIORITIES.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {item}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="n-action-type">Action type</Label>
-          <Select
-            value={actionType}
-            onValueChange={(value) => {
-              const next = value as NotificationActionType;
-              setActionType(next);
-              if (next === "None") setActionValue("");
-            }}
-          >
-            <SelectTrigger id="n-action-type" className="bg-background">
-              <SelectValue placeholder="Select action" />
-            </SelectTrigger>
-            <SelectContent>
-              {NOTIFICATION_ACTION_TYPES.map((item) => (
-                <SelectItem key={item} value={item}>
-                  {item}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {actionType !== "None" && actionType !== "OpenMessages" && (
-          <div className="space-y-1.5">
-            <Label htmlFor="n-action-value">Action value</Label>
-            <Input
-              id="n-action-value"
-              className="bg-background"
-              value={actionValue}
-              onChange={(e) => setActionValue(e.target.value)}
-              maxLength={500}
-              placeholder={actionValueHint(actionType)}
-            />
-          </div>
-        )}
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <Label>Recipients</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedRecipientIds(activeUsers.map((u) => u.id))}
-                disabled={activeUsers.length === 0}
-              >
-                Select all
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedRecipientIds([])}
-                disabled={selectedRecipientIds.length === 0}
-              >
-                Clear
-              </Button>
-            </div>
-          </div>
-          <Input
-            className="bg-background"
-            placeholder="Filter by name or email"
-            value={recipientSearch}
-            onChange={(e) => setRecipientSearch(e.target.value)}
-          />
-          <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-border bg-background p-3">
-            {filteredRecipients.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No matching active users.</p>
-            ) : (
-              filteredRecipients.map((user) => (
-                <label key={user.id} className="flex cursor-pointer items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selectedRecipientIds.includes(user.id)}
-                    onChange={() => toggleRecipient(user.id)}
-                  />
-                  <span>
-                    {user.FirstName} {user.LastName}
-                    <span className="text-muted-foreground"> ({user.Email})</span>
-                  </span>
-                </label>
-              ))
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">{recipientSummary}</p>
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="outline" onClick={() => setOpen(false)} disabled={send.isPending}>
             Cancel
           </Button>
-          <Button onClick={() => setConfirmSend(true)} disabled={!parsed.success || send.isPending} variant="success">
-            {send.isPending ? "Sending…" : "Send notification"}
+          <Button
+            onClick={() => setConfirmSend(true)}
+            disabled={!canSend || send.isPending}
+            variant="success"
+          >
+            {send.isPending ? "Sending..." : "Send notification"}
           </Button>
         </div>
       </FormModal>
+
+      <NotificationSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 
       <ConfirmationDialog
         open={confirmSend}
         onOpenChange={setConfirmSend}
         title="Send notification?"
-        description={`This will send "${title.trim()}" (${notificationType}, ${priority}) to ${recipientSummary}. This action cannot be undone.`}
+        description={`This will send "${message.title.trim()}" (${message.notificationType}, ${message.priority}) to ${recipients.summary}${recipients.deviceSerialNumber ? `, about ${recipients.deviceSerialNumber}` : ""}. This action cannot be undone.`}
         confirmLabel="Send notification"
         loading={send.isPending}
         onConfirm={() => send.mutate()}
@@ -661,7 +564,10 @@ function CampaignDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col border-l border-border bg-surface shadow-none sm:max-w-xl">
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col border-l border-border bg-surface shadow-none sm:max-w-xl"
+      >
         {campaign && (
           <>
             <SheetHeader className="border-b border-border pb-4 text-left">
@@ -681,11 +587,7 @@ function CampaignDetailSheet({
                   <p className="text-xs text-muted-foreground">
                     Sent {formatDateTime(campaign.notification.CreatedAt)}
                   </p>
-                  {action && (
-                    <p className="text-xs text-muted-foreground">
-                      Tap action: {action}
-                    </p>
-                  )}
+                  {action && <p className="text-xs text-muted-foreground">Tap action: {action}</p>}
                 </div>
               </SheetDescription>
             </SheetHeader>
@@ -708,7 +610,9 @@ function CampaignDetailSheet({
                             : "Unknown user"}
                         </p>
                         {row.recipient?.Email && (
-                          <p className="truncate text-xs text-muted-foreground">{row.recipient.Email}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {row.recipient.Email}
+                          </p>
                         )}
                       </div>
                       <ReadStateBadge isRead={row.userNotification.IsRead} />
@@ -725,7 +629,9 @@ function CampaignDetailSheet({
                         ))}
                       </div>
                     ) : (
-                      <p className="mt-2 text-xs text-muted-foreground">No registered push devices</p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        No registered push devices
+                      </p>
                     )}
                   </div>
                 ))}
@@ -741,7 +647,9 @@ function CampaignDetailSheet({
 function DeliveryChip({ delivery }: { delivery: PushNotificationDelivery }) {
   return (
     <div className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-border/80 bg-muted/40 px-2 py-1">
-      <span className="truncate text-[11px] text-muted-foreground">{delivery.InstallationLabel}</span>
+      <span className="truncate text-[11px] text-muted-foreground">
+        {delivery.InstallationLabel}
+      </span>
       <DeliveryStatusBadge status={delivery.DeliveryStatus as DeliveryStatus} />
     </div>
   );

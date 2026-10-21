@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth";
-import { toUserMessage } from "@/services/client";
+import { toLoginMessage } from "@/services/client";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -22,18 +22,26 @@ export const Route = createFileRoute("/login")({
 
 const schema = z.object({
   email: z.string().trim().email("Please enter a valid email address."),
-  password: z.string().min(6, "Password must be at least 6 characters."),
+  password: z.string().min(1, "Password is required."),
 });
 
 function LoginPage() {
-  const { session, ready, signIn } = useAuth();
+  const { session, ready, signIn, signOutMessage } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
+  /** Why the panel signed the user out (suspended, disabled, expired); hidden once they act. */
+  const [showSignOutMessage, setShowSignOutMessage] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  /**
+   * The eye only works for a password the user typed. A password filled in by
+   * the browser's password manager must never be shown; clearing the field and
+   * typing it again allows the eye.
+   */
+  const [canRevealPassword, setCanRevealPassword] = useState(true);
 
   useEffect(() => {
     if (ready && session) navigate({ to: "/", replace: true });
@@ -44,6 +52,7 @@ function LoginPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    setShowSignOutMessage(false);
     const result = schema.safeParse({ email, password });
     if (!result.success) {
       const fieldErrors: { email?: string; password?: string } = {};
@@ -61,7 +70,7 @@ function LoginPage() {
       await signIn(email, password);
       navigate({ to: "/", replace: true });
     } catch (error) {
-      setFormError(toUserMessage(error, "Unable to sign in right now. Please try again."));
+      setFormError(toLoginMessage(error));
     } finally {
       setLoading(false);
     }
@@ -116,7 +125,10 @@ function LoginPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setFormError(null);
+                }}
                 autoComplete="username"
                 aria-invalid={!!errors.email}
                 placeholder="name@company.com"
@@ -130,27 +142,49 @@ function LoginPage() {
               <div className="relative">
                 <Input
                   id="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword && canRevealPassword && password !== "" ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    const inputType = (e.nativeEvent as InputEvent).inputType;
+                    if (next === "") {
+                      // Cleared: whatever is typed next is the user's own.
+                      setCanRevealPassword(true);
+                      setShowPassword(false);
+                    } else if (password === "" && !(next.length === 1 && inputType === "insertText")) {
+                      // Filled in one go from empty (browser autofill or paste): keep hidden.
+                      setCanRevealPassword(false);
+                      setShowPassword(false);
+                    }
+                    setPassword(next);
+                    setFormError(null);
+                  }}
                   autoComplete="current-password"
                   aria-invalid={!!errors.password}
                   placeholder="Enter your password"
                   className="bg-background pr-10"
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowPassword((visible) => !visible)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </Button>
+                {canRevealPassword && password !== "" && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </Button>
+                )}
               </div>
               {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
             </div>
+
+            {!formError && showSignOutMessage && signOutMessage && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {signOutMessage}
+              </div>
+            )}
 
             {formError && (
               <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -160,7 +194,7 @@ function LoginPage() {
 
             <Button type="submit" className="w-full" disabled={!parsed.success || loading}>
               {loading && <Loader2 className="size-4 animate-spin" />}
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
         </div>

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Ban, Eye, MoreHorizontal, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { Archive, Eye, MoreHorizontal, Plus, ShieldOff, Undo2 } from "lucide-react";
 import { PageHeader } from "@/components/app/page-header";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { Button } from "@/components/ui/button";
@@ -12,17 +11,37 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ActiveBadge, DeviceStatus, DeviceTypeBadge } from "@/components/app/badges";
-import { ConfirmationDialog, SideDrawer } from "@/components/app/dialogs";
+import { DeviceStatus, DeviceTypeBadge } from "@/components/app/badges";
+import { SideDrawer } from "@/components/app/dialogs";
+import { useDeviceStatusAction } from "@/components/devices/device-status-action";
 import { deviceService, deviceTypeService } from "@/services";
-import { toUserMessage } from "@/services/client";
-import { DEVICE_STATUSES, type Device } from "@/types/entities";
+import {
+  DEVICE_STATUSES,
+  type Device,
+  type DeviceStatus as DeviceStatusValue,
+} from "@/types/entities";
+import {
+  DEVICE_STATUS_ACTION_COPY,
+  canDecommission,
+  canReinstate,
+  canSuspend,
+  isDeviceStatus,
+} from "@/lib/device-state";
 import { formatDate, formatDateTime, maskValue } from "@/lib/format";
 import { iconTone } from "@/lib/icon-colors";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/lib/auth";
 
+interface DevicesSearch {
+  type?: string | undefined;
+  status?: DeviceStatusValue | undefined;
+}
+
 export const Route = createFileRoute("/devices/")({
+  validateSearch: (search: Record<string, unknown>): DevicesSearch => ({
+    type: typeof search["type"] === "string" && search["type"] ? search["type"] : undefined,
+    status: isDeviceStatus(search["status"]) ? search["status"] : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Devices | Manufacturer Panel | ConfigGate" },
@@ -42,10 +61,10 @@ export const Route = createFileRoute("/devices/")({
 
 function DevicesPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const permissions = usePermissions();
-  const queryClient = useQueryClient();
   const [quickView, setQuickView] = useState<Device | null>(null);
-  const [toDeactivate, setToDeactivate] = useState<Device | null>(null);
+  const statusAction = useDeviceStatusAction();
 
   const devicesQuery = useQuery({ queryKey: ["devices"], queryFn: () => deviceService.list() });
   const typesQuery = useQuery({
@@ -54,17 +73,6 @@ function DevicesPage() {
   });
 
   const typeOf = (id: string) => typesQuery.data?.find((t) => t.id === id);
-
-  const deactivate = useMutation({
-    mutationFn: (serial: string) => deviceService.deactivate(serial),
-    onSuccess: () => {
-      toast.success("Device deactivated successfully.");
-      setToDeactivate(null);
-      void queryClient.invalidateQueries({ queryKey: ["devices"] });
-    },
-    onError: (error) =>
-      toast.error(toUserMessage(error, "Unable to deactivate this device. Please try again.")),
-  });
 
   const columns: Column<Device>[] = [
     {
@@ -88,7 +96,7 @@ function DevicesPage() {
         return t ? (
           <DeviceTypeBadge code={t.TypeCode} name={t.TypeName} />
         ) : (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-muted-foreground">-</span>
         );
       },
     },
@@ -113,7 +121,6 @@ function DevicesPage() {
         </span>
       ),
     },
-    { key: "active", header: "Active", render: (d) => <ActiveBadge active={d.Active} /> },
   ];
 
   return (
@@ -131,6 +138,11 @@ function DevicesPage() {
       />
 
       <DataTable
+        key={`${search.type ?? "all"}-${search.status ?? "all"}`}
+        initialFilterValues={{
+          ...(search.type ? { type: search.type } : {}),
+          ...(search.status ? { status: search.status } : {}),
+        }}
         data={devicesQuery.data}
         columns={columns}
         rowKey={(d) => d.SerialNumber}
@@ -156,15 +168,6 @@ function DevicesPage() {
             options: DEVICE_STATUSES.map((s) => ({ value: s, label: s })),
             predicate: (d, v) => d.DeviceStatus === v,
           },
-          {
-            key: "active",
-            label: "Active",
-            options: [
-              { value: "yes", label: "Active" },
-              { value: "no", label: "Inactive" },
-            ],
-            predicate: (d, v) => (v === "yes" ? d.Active : !d.Active),
-          },
         ]}
         onRowClick={(d) => navigate({ to: "/devices/$serial", params: { serial: d.SerialNumber } })}
         emptyTitle="No devices registered"
@@ -177,21 +180,42 @@ function DevicesPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setQuickView(d)}>
-                <Eye className={cn("size-4", iconTone.info)} /> Quick view
+                <Eye className={cn("size-4", iconTone.info)} /> Quick View
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() =>
                   navigate({ to: "/devices/$serial", params: { serial: d.SerialNumber } })
                 }
               >
-                Open device
+                Open Device
               </DropdownMenuItem>
-              {permissions.canDeactivateDevice && d.Active && (
+              {permissions.canDeactivateDevice && canReinstate(d.DeviceStatus) && (
+                <DropdownMenuItem
+                  onSelect={() => statusAction.request("reinstate", d.SerialNumber)}
+                >
+                  <Undo2 className={cn("size-4", iconTone.info)} />{" "}
+                  {DEVICE_STATUS_ACTION_COPY.reinstate.menuLabel}
+                </DropdownMenuItem>
+              )}
+              {permissions.canDeactivateDevice && canSuspend(d.DeviceStatus) && (
+                <DropdownMenuItem onSelect={() => statusAction.request("suspend", d.SerialNumber)}>
+                  <ShieldOff className={cn("size-4", iconTone.warning)} />{" "}
+                  {DEVICE_STATUS_ACTION_COPY.suspend.menuLabel}
+                </DropdownMenuItem>
+              )}
+              {permissions.canDeactivateDevice && d.DeviceStatus !== "Decommissioned" && (
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onSelect={() => setToDeactivate(d)}
+                  disabled={!canDecommission(d.DeviceStatus)}
+                  title={
+                    canDecommission(d.DeviceStatus)
+                      ? undefined
+                      : "Only a Released device can be decommissioned."
+                  }
+                  onSelect={() => statusAction.request("decommission", d.SerialNumber)}
                 >
-                  <Ban className={cn("size-4", iconTone.danger)} /> Deactivate device
+                  <Archive className={cn("size-4", iconTone.danger)} />{" "}
+                  {DEVICE_STATUS_ACTION_COPY.decommission.menuLabel}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -208,7 +232,7 @@ function DevicesPage() {
           <dl className="space-y-3 py-4 text-sm">
             {[
               ["Device Name", quickView.DeviceName],
-              ["Device Type", typeOf(quickView.DeviceTypeId)?.TypeName ?? "—"],
+              ["Device Type", typeOf(quickView.DeviceTypeId)?.TypeName ?? "-"],
               ["Status", quickView.DeviceStatus],
               ["Firmware Version", quickView.FirmwareVersion],
               ["Hardware Version", quickView.HardwareVersion],
@@ -240,16 +264,7 @@ function DevicesPage() {
         )}
       </SideDrawer>
 
-      <ConfirmationDialog
-        open={!!toDeactivate}
-        onOpenChange={(v) => !v && setToDeactivate(null)}
-        title="Deactivate this device?"
-        description={`Are you sure you want to deactivate ${toDeactivate?.SerialNumber ?? ""}? Device history is preserved; the device is never deleted.`}
-        confirmLabel="Deactivate device"
-        destructive
-        loading={deactivate.isPending}
-        onConfirm={() => toDeactivate && deactivate.mutate(toDeactivate.SerialNumber)}
-      />
+      {statusAction.dialog}
     </>
   );
 }

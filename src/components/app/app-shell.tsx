@@ -5,12 +5,10 @@ import {
   Cpu,
   LayoutDashboard,
   LifeBuoy,
-  Link2,
   LogOut,
   Menu,
   Radar,
   Users,
-  Wrench,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,8 +22,6 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/devices", label: "Devices", icon: Cpu, exact: false },
   { to: "/device-types", label: "Device Types", icon: Radar, exact: false },
-  { to: "/relationships", label: "Relationships", icon: Link2, exact: false },
-  { to: "/installers", label: "Installers", icon: Wrench, exact: false },
   { to: "/users", label: "Users", icon: Users, exact: false },
   { to: "/notifications", label: "Notifications", icon: Bell, exact: false },
   { to: "/support", label: "Support", icon: LifeBuoy, exact: false },
@@ -158,7 +154,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Bell className="size-4 text-warning" />
               </Link>
             </Button>
-            <div className="flex items-center gap-2 px-2 py-1.5">
+            <Link
+              to="/users/$userId"
+              params={{ userId: user.id }}
+              aria-label="Open my user details"
+              className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
+            >
               <UserAvatar user={user} size="sm" />
               <span className="hidden text-left leading-tight sm:block">
                 <span className="block text-sm text-foreground">
@@ -166,7 +167,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </span>
                 <span className="block text-[11px] text-muted-foreground">{user.Email}</span>
               </span>
-            </div>
+            </Link>
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1600px] px-4 py-6 lg:px-8 lg:py-8">

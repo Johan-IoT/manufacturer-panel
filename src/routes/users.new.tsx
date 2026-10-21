@@ -7,8 +7,10 @@ import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { VerifyContacts } from "@/components/users/verify-contacts";
 import { userService } from "@/services";
 import { toUserMessage } from "@/services/client";
+import type { AppUser } from "@/types/entities";
 
 export const Route = createFileRoute("/users/new")({
   head: () => ({
@@ -48,6 +50,8 @@ function CreateInstallerPage() {
     companyName: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  /** Created user waiting for the email / mobile codes. */
+  const [created, setCreated] = useState<AppUser | null>(null);
 
   const create = useMutation({
     mutationFn: () =>
@@ -59,9 +63,13 @@ function CreateInstallerPage() {
         password: form.password,
         companyName: form.companyName.trim() || undefined,
       }),
-    onSuccess: (user) => {
-      toast.success("Installer account created and activated.");
-      void navigate({ to: "/users/$userId", params: { userId: user.id } });
+    onSuccess: ({ user, codesSent }) => {
+      setCreated(user);
+      if (codesSent.email && codesSent.mobile) {
+        toast.success("Installer created. Enter the codes sent to the email and mobile number.");
+      } else {
+        toast.error("Installer created, but a code could not be sent. Use Resend code.");
+      }
     },
     onError: (e) => toast.error(toUserMessage(e, "Unable to create installer. Please try again.")),
   });
@@ -108,13 +116,30 @@ function CreateInstallerPage() {
         ]}
       />
 
+      {created ? (
+        <section className="mx-auto max-w-xl space-y-5 rounded-lg border border-border bg-surface p-6 shadow-none">
+          <div>
+            <h2 className="text-sm font-semibold">Verify email and mobile number</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Codes were sent to {created.FirstName}&apos;s email and mobile number. Ask them for the codes and
+              enter them here. The account cannot sign in until both are confirmed.
+            </p>
+          </div>
+          <VerifyContacts user={created} onVerified={setCreated} initialCooldown />
+          <div className="flex justify-end">
+            <Button type="button" onClick={() => navigate({ to: "/users/$userId", params: { userId: created.id } })}>
+              {created.EmailVerified && created.MobileVerified ? "Done" : "Finish later"}
+            </Button>
+          </div>
+        </section>
+      ) : (
       <form
         onSubmit={handleSubmit}
         className="mx-auto max-w-xl space-y-6 rounded-lg border border-border bg-surface p-6 shadow-none"
       >
         <p className="text-sm text-muted-foreground">
-          Creates an active installer account with mobile login enabled. Grant device access on
-          Relationships after creation.
+          Creates an installer account for the mobile app. A code is sent to the email and to the
+          mobile number; both must be confirmed before the installer can sign in.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -140,6 +165,7 @@ function CreateInstallerPage() {
           </Button>
         </div>
       </form>
+      )}
     </>
   );
 }

@@ -103,6 +103,10 @@ interface DataTableProps<T> {
   emptyTitle?: string | undefined;
   toolbarExtra?: ReactNode | undefined;
   pageSize?: number | undefined;
+  /** Filter values applied on first render (e.g. from the URL). */
+  initialFilterValues?: Record<string, string> | undefined;
+  /** Highlights the selected row (e.g. the open conversation). */
+  isRowSelected?: ((row: T) => boolean) | undefined;
 }
 
 export function DataTable<T>({
@@ -121,9 +125,11 @@ export function DataTable<T>({
   emptyTitle,
   toolbarExtra,
   pageSize = 10,
+  initialFilterValues,
+  isRowSelected,
 }: DataTableProps<T>) {
   const [query, setQuery] = useState("");
-  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+  const [filterValues, setFilterValues] = useState<Record<string, string>>(initialFilterValues ?? {});
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
   const [page, setPage] = useState(1);
 
@@ -164,6 +170,7 @@ export function DataTable<T>({
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-none">
+      {(searchFields?.length || filters.length > 0 || toolbarExtra) && (
       <TableToolbar>
         {searchFields?.length ? (
           <SearchInput
@@ -194,6 +201,7 @@ export function DataTable<T>({
         )}
         <div className="ml-auto flex items-center gap-2">{toolbarExtra}</div>
       </TableToolbar>
+      )}
 
       {isLoading && (data == null || data.length === 0) ? (
         <div className="animate-content-enter">
@@ -265,7 +273,9 @@ export function DataTable<T>({
                   className={cn(
                     "animate-row-enter border-b border-border/60 transition-colors last:border-0",
                     onRowClick && "cursor-pointer hover:bg-accent/40",
+                    isRowSelected?.(row) && "bg-primary/5 hover:bg-primary/10",
                   )}
+                  aria-selected={isRowSelected ? isRowSelected(row) : undefined}
                   style={{ animationDelay: `${Math.min(index * 60, 480)}ms` }}
                 >
                   {columns.map((c) => (
@@ -289,7 +299,7 @@ export function DataTable<T>({
       {!isLoading && !isError && filtered.length > 0 && (
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-xs text-muted-foreground">
           <span>
-            Showing {(current - 1) * pageSize + 1}–{Math.min(current * pageSize, filtered.length)} of {filtered.length}
+            Showing {(current - 1) * pageSize + 1}-{Math.min(current * pageSize, filtered.length)} of {filtered.length}
           </span>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" disabled={current <= 1} onClick={() => setPage(current - 1)}>

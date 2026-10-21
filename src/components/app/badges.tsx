@@ -8,11 +8,15 @@ type Tone = "neutral" | "success" | "warning" | "danger" | "info" | "primary";
 
 const toneClass: Record<Tone, string> = {
   neutral: "bg-muted text-muted-foreground border-border",
-  success: "bg-[var(--tone-success-bg)] text-[var(--tone-success-fg)] border-[var(--tone-success-border)]",
-  warning: "bg-[var(--tone-warning-bg)] text-[var(--tone-warning-fg)] border-[var(--tone-warning-border)]",
-  danger: "bg-[var(--tone-danger-bg)] text-[var(--tone-danger-fg)] border-[var(--tone-danger-border)]",
+  success:
+    "bg-[var(--tone-success-bg)] text-[var(--tone-success-fg)] border-[var(--tone-success-border)]",
+  warning:
+    "bg-[var(--tone-warning-bg)] text-[var(--tone-warning-fg)] border-[var(--tone-warning-border)]",
+  danger:
+    "bg-[var(--tone-danger-bg)] text-[var(--tone-danger-fg)] border-[var(--tone-danger-border)]",
   info: "bg-[var(--tone-info-bg)] text-[var(--tone-info-fg)] border-[var(--tone-info-border)]",
-  primary: "bg-[var(--tone-primary-bg)] text-[var(--tone-primary-fg)] border-[var(--tone-primary-border)]",
+  primary:
+    "bg-[var(--tone-primary-bg)] text-[var(--tone-primary-fg)] border-[var(--tone-primary-border)]",
 };
 
 export function Pill({
@@ -43,15 +47,16 @@ export function Pill({
 const deviceStatusTone: Record<DeviceStatusType, Tone> = {
   Manufactured: "neutral",
   Registered: "info",
-  Claimed: "primary",
-  Active: "success",
+  Claimed: "success",
+  Released: "primary",
   Suspended: "warning",
   Decommissioned: "danger",
 };
 
+/** Device status (see lib/device-state for the lifecycle). */
 export function DeviceStatus({ status }: { status: DeviceStatusType }) {
   return (
-    <Pill tone={deviceStatusTone[status]} dot>
+    <Pill tone={deviceStatusTone[status] ?? "neutral"} dot>
       {status}
     </Pill>
   );
@@ -66,13 +71,21 @@ const accountStatusTone: Record<AccountStatus, Tone> = {
 
 export function StatusBadge({ status }: { status: AccountStatus }) {
   return (
-    <Pill tone={accountStatusTone[status]} dot className={status === "Suspended" ? "border-dashed" : undefined}>
+    <Pill
+      tone={accountStatusTone[status]}
+      dot
+      className={status === "Suspended" ? "border-dashed" : undefined}
+    >
       {status}
     </Pill>
   );
 }
 
-export function CapabilityBadges({ user }: { user: { IsManufacturer: boolean; IsInstaller: boolean } }) {
+export function CapabilityBadges({
+  user,
+}: {
+  user: { IsManufacturer: boolean; IsInstaller: boolean };
+}) {
   if (!user.IsManufacturer && !user.IsInstaller) {
     return <Pill tone="neutral">App user</Pill>;
   }
@@ -112,8 +125,18 @@ export function CategoryBadge({ category }: { category: string }) {
 
 export function ThreadStatusBadge({ status }: { status: string }) {
   const tone: Tone =
-    status === "Open" ? "warning" : status === "In Progress" ? "info" : status === "Resolved" ? "success" : "neutral";
-  return <Pill tone={tone} dot>{status}</Pill>;
+    status === "Open"
+      ? "warning"
+      : status === "In Progress"
+        ? "info"
+        : status === "Resolved"
+          ? "success"
+          : "neutral";
+  return (
+    <Pill tone={tone} dot>
+      {status}
+    </Pill>
+  );
 }
 
 export function DeliveryStatusBadge({ status }: { status: string }) {
@@ -133,7 +156,11 @@ export function DeliveryStatusBadge({ status }: { status: string }) {
 export function ReadStateBadge({ isRead }: { isRead: boolean }) {
   return (
     <Pill tone={isRead ? "neutral" : "primary"}>
-      {isRead ? <Check className={cn("size-3", iconTone.success)} /> : <span className="size-1.5 rounded-full bg-current" />}
+      {isRead ? (
+        <Check className={cn("size-3", iconTone.success)} />
+      ) : (
+        <span className="size-1.5 rounded-full bg-current" />
+      )}
       {isRead ? "Read" : "Unread"}
     </Pill>
   );
@@ -156,14 +183,22 @@ const permissionIcons = {
 
 export type PermissionKey = keyof typeof permissionIcons;
 
-export function PermissionBadge({ permission, granted }: { permission: PermissionKey; granted: boolean }) {
+export function PermissionBadge({
+  permission,
+  granted,
+}: {
+  permission: PermissionKey;
+  granted: boolean;
+}) {
   const { icon: Icon, label } = permissionIcons[permission];
   return (
     <span
       title={`${label}: ${granted ? "granted" : "not granted"}`}
       className={cn(
         "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
-        granted ? "border-[var(--tone-primary-border)] bg-[var(--tone-primary-bg)] text-[var(--tone-primary-fg)]" : "border-border bg-muted text-muted-foreground",
+        granted
+          ? "border-[var(--tone-primary-border)] bg-[var(--tone-primary-bg)] text-[var(--tone-primary-fg)]"
+          : "border-border bg-muted text-muted-foreground",
       )}
     >
       <Icon className={cn("size-3", granted ? permissionIconTone[permission] : iconTone.muted)} />

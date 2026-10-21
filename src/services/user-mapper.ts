@@ -12,7 +12,7 @@ function toPascalStatus(value: unknown): AccountStatus {
 }
 
 function normalizeRoles(raw: Record<string, unknown>): GlobalRole[] {
-  const fromArray = raw.globalRoles as unknown;
+  const fromArray = raw["globalRoles"] as unknown;
   if (Array.isArray(fromArray) && fromArray.length > 0) {
     return fromArray.map((role) => {
       const text = String(role);
@@ -20,10 +20,10 @@ function normalizeRoles(raw: Record<string, unknown>): GlobalRole[] {
     });
   }
   const roles: GlobalRole[] = [];
-  if (raw.IsManufacturer === true || raw.isManufacturerCapability === true) {
+  if (raw["IsManufacturer"] === true || raw["isManufacturerCapability"] === true) {
     roles.push("Manufacturer");
   }
-  if (raw.IsInstaller === true || raw.isInstallerCapability === true) {
+  if (raw["IsInstaller"] === true || raw["isInstallerCapability"] === true) {
     roles.push("Installer");
   }
   return roles;
@@ -33,21 +33,23 @@ function normalizeRoles(raw: Record<string, unknown>): GlobalRole[] {
 export function normalizeUser(raw: AppUser | Record<string, unknown>): AppUser {
   const source = raw as Record<string, unknown>;
   const roles = normalizeRoles(source);
-  const accountStatus = toPascalStatus(source.AccountStatus ?? source.accountStatus);
+  const accountStatus = toPascalStatus(source["AccountStatus"] ?? source["accountStatus"]);
   return {
-    id: String(source.id ?? ""),
-    FirstName: String(source.FirstName ?? source.firstName ?? ""),
-    LastName: String(source.LastName ?? source.lastName ?? ""),
-    Email: String(source.Email ?? source.email ?? ""),
-    MobileNumber: String(source.MobileNumber ?? source.mobile ?? ""),
+    id: String(source["id"] ?? ""),
+    FirstName: String(source["FirstName"] ?? source["firstName"] ?? ""),
+    LastName: String(source["LastName"] ?? source["lastName"] ?? ""),
+    Email: String(source["Email"] ?? source["email"] ?? ""),
+    MobileNumber: String(source["MobileNumber"] ?? source["mobile"] ?? ""),
+    CompanyName: String(source["CompanyName"] ?? source["companyName"] ?? ""),
     globalRoles: roles,
     IsManufacturer: roles.includes("Manufacturer"),
     IsInstaller: roles.includes("Installer"),
+    SupportNotificationsOptIn: Boolean(source["SupportNotificationsOptIn"]),
     AccountStatus: accountStatus,
-    EmailVerified: Boolean(source.EmailVerified ?? source.emailVerified),
-    MobileVerified: Boolean(source.MobileVerified ?? source.mobileVerified),
-    LastLoginAt: (source.LastLoginAt ?? source.lastLoginAt ?? null) as string | null,
-    CreatedAt: String(source.CreatedAt ?? source.createdAt ?? new Date().toISOString()),
-    UpdatedAt: String(source.UpdatedAt ?? source.updatedAt ?? new Date().toISOString()),
+    EmailVerified: Boolean(source["EmailVerified"] ?? source["emailVerified"]),
+    MobileVerified: Boolean(source["MobileVerified"] ?? source["mobileVerified"]),
+    LastLoginAt: (source["LastLoginAt"] ?? source["lastLoginAt"] ?? null) as string | null,
+    CreatedAt: String(source["CreatedAt"] ?? source["createdAt"] ?? new Date().toISOString()),
+    UpdatedAt: String(source["UpdatedAt"] ?? source["updatedAt"] ?? new Date().toISOString()),
   };
 }

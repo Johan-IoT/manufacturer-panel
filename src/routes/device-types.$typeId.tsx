@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/app/page-header";
-import { ActiveBadge, CategoryBadge, DeviceTypeBadge, Pill } from "@/components/app/badges";
+import { ActiveBadge, CategoryBadge, DeviceTypeBadge } from "@/components/app/badges";
 import { BleProfileEditor } from "@/components/app/ble-profile-editor";
+import { DeviceTypeDefaultConfigSection } from "@/components/app/device-type-default-config";
 import { ConfirmationDialog } from "@/components/app/dialogs";
 import { AsyncPageContent } from "@/components/app/page-layout";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { bleProfileService, deviceTypeService } from "@/services";
 import { toUserMessage } from "@/services/client";
 import { usePermissions } from "@/lib/auth";
@@ -22,7 +29,10 @@ export const Route = createFileRoute("/device-types/$typeId")({
   head: () => ({
     meta: [
       { title: "Device Type | Manufacturer Panel | ConfigGate" },
-      { name: "description", content: "Edit device type settings and its single active BLE profile." },
+      {
+        name: "description",
+        content: "Edit device type settings and its single active BLE profile.",
+      },
       { property: "og:title", content: "Device Type | Manufacturer Panel" },
       { property: "og:description", content: "Device type and BLE profile configuration." },
     ],
@@ -38,21 +48,29 @@ function DeviceTypeDetailPage() {
   const [metadata, setMetadata] = useState<DeviceType | null>(null);
   const [confirmMetadata, setConfirmMetadata] = useState(false);
 
-  const typeQuery = useQuery({ queryKey: ["device-type", typeId], queryFn: () => deviceTypeService.get(typeId) });
-  const profileQuery = useQuery({ queryKey: ["ble-profile", typeId], queryFn: () => bleProfileService.getForDeviceType(typeId) });
+  const typeQuery = useQuery({
+    queryKey: ["device-type", typeId],
+    queryFn: () => deviceTypeService.get(typeId),
+  });
+  const profileQuery = useQuery({
+    queryKey: ["ble-profile", typeId],
+    queryFn: () => bleProfileService.getForDeviceType(typeId),
+  });
 
   useEffect(() => {
     if (typeQuery.data) setMetadata(typeQuery.data);
   }, [typeQuery.data]);
 
   const saveBle = useMutation({
-    mutationFn: (patch: Record<string, unknown>) => bleProfileService.update(profileQuery.data!.id, patch),
+    mutationFn: (patch: Record<string, unknown>) =>
+      bleProfileService.update(profileQuery.data!.id, patch),
     onSuccess: () => {
       toast.success("BLE profile saved successfully.");
       setPendingBlePatch(null);
       void queryClient.invalidateQueries({ queryKey: ["ble-profile", typeId] });
     },
-    onError: (e) => toast.error(toUserMessage(e, "Unable to save the BLE profile. Please try again.")),
+    onError: (e) =>
+      toast.error(toUserMessage(e, "Unable to save the BLE profile. Please try again.")),
   });
 
   const saveMetadata = useMutation({
@@ -63,7 +81,7 @@ function DeviceTypeDetailPage() {
         ManufacturerName: metadata!.ManufacturerName,
         DeviceCategory: metadata!.DeviceCategory,
         HardwareVersion: metadata!.HardwareVersion,
-        ClaimAllowed: metadata!.ClaimAllowed,
+        QrSerialPrefix: metadata!.QrSerialPrefix.trim().toUpperCase(),
         RssiConnectMinimum: metadata!.RssiConnectMinimum,
         Active: metadata!.Active,
       }),
@@ -73,7 +91,8 @@ function DeviceTypeDetailPage() {
       void queryClient.invalidateQueries({ queryKey: ["device-type", typeId] });
       void queryClient.invalidateQueries({ queryKey: ["device-types"] });
     },
-    onError: (e) => toast.error(toUserMessage(e, "Unable to save device type metadata. Please try again.")),
+    onError: (e) =>
+      toast.error(toUserMessage(e, "Unable to save device type metadata. Please try again.")),
   });
 
   const metadataDirty =
@@ -84,7 +103,7 @@ function DeviceTypeDetailPage() {
       metadata.ManufacturerName !== typeQuery.data.ManufacturerName ||
       metadata.DeviceCategory !== typeQuery.data.DeviceCategory ||
       metadata.HardwareVersion !== typeQuery.data.HardwareVersion ||
-      metadata.ClaimAllowed !== typeQuery.data.ClaimAllowed ||
+      metadata.QrSerialPrefix !== typeQuery.data.QrSerialPrefix ||
       metadata.RssiConnectMinimum !== typeQuery.data.RssiConnectMinimum ||
       metadata.Active !== typeQuery.data.Active);
 
@@ -119,7 +138,11 @@ function DeviceTypeDetailPage() {
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-sm font-semibold">Device type metadata</h2>
                 {permissions.canManageDeviceTypes && metadataDirty && (
-                  <Button size="sm" onClick={() => setConfirmMetadata(true)} disabled={saveMetadata.isPending}>
+                  <Button
+                    size="sm"
+                    onClick={() => setConfirmMetadata(true)}
+                    disabled={saveMetadata.isPending}
+                  >
                     Save metadata
                   </Button>
                 )}
@@ -161,7 +184,9 @@ function DeviceTypeDetailPage() {
                   <Select
                     value={metadata.DeviceCategory}
                     disabled={!permissions.canManageDeviceTypes}
-                    onValueChange={(v) => setMetadata({ ...metadata, DeviceCategory: v as DeviceCategory })}
+                    onValueChange={(v) =>
+                      setMetadata({ ...metadata, DeviceCategory: v as DeviceCategory })
+                    }
                   >
                     <SelectTrigger id="meta-category" className="bg-background">
                       <SelectValue />
@@ -186,6 +211,26 @@ function DeviceTypeDetailPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
+                  <Label htmlFor="meta-qr-prefix">QR Serial Prefix</Label>
+                  <Input
+                    id="meta-qr-prefix"
+                    className="bg-background font-mono uppercase"
+                    value={metadata.QrSerialPrefix}
+                    disabled={!permissions.canManageDeviceTypes}
+                    maxLength={20}
+                    placeholder="e.g. DK"
+                    onChange={(e) =>
+                      setMetadata({
+                        ...metadata,
+                        QrSerialPrefix: e.target.value.replace(/[^A-Za-z0-9]/g, ""),
+                      })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Text in front of the serial on the device QR code.
+                  </p>
+                </div>
+                <div className="space-y-1.5">
                   <Label htmlFor="meta-rssi">RSSI Connect Minimum (dBm)</Label>
                   <Input
                     id="meta-rssi"
@@ -195,31 +240,24 @@ function DeviceTypeDetailPage() {
                     disabled={!permissions.canManageDeviceTypes}
                     min={-120}
                     max={0}
-                    onChange={(e) => setMetadata({ ...metadata, RssiConnectMinimum: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setMetadata({ ...metadata, RssiConnectMinimum: Number(e.target.value) })
+                    }
                   />
                 </div>
-                <div className="flex flex-wrap items-center gap-6 lg:col-span-2">
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      id="meta-claim"
-                      checked={metadata.ClaimAllowed}
-                      disabled={!permissions.canManageDeviceTypes}
-                      onCheckedChange={(v) => setMetadata({ ...metadata, ClaimAllowed: v })}
-                    />
-                    <Label htmlFor="meta-claim">Claim allowed</Label>
-                    <Pill tone={metadata.ClaimAllowed ? "success" : "neutral"}>
-                      {metadata.ClaimAllowed ? "Allowed" : "Not allowed"}
-                    </Pill>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      id="meta-active"
-                      checked={metadata.Active}
-                      disabled={!permissions.canManageDeviceTypes}
-                      onCheckedChange={(v) => setMetadata({ ...metadata, Active: v })}
-                    />
-                    <Label htmlFor="meta-active">Active</Label>
-                  </div>
+                <div className="flex flex-wrap items-center gap-3 lg:col-span-2">
+                  <Switch
+                    id="meta-active"
+                    checked={metadata.Active}
+                    disabled={!permissions.canManageDeviceTypes}
+                    onCheckedChange={(v) => setMetadata({ ...metadata, Active: v })}
+                  />
+                  <Label htmlFor="meta-active">Active</Label>
+                  <span className="text-xs text-muted-foreground">
+                    {metadata.Active
+                      ? "Can be selected when adding devices."
+                      : "Hidden from the device type lists. Existing devices keep working."}
+                  </span>
                 </div>
               </div>
             </section>
@@ -245,6 +283,11 @@ function DeviceTypeDetailPage() {
               </AsyncPageContent>
             </section>
 
+            <DeviceTypeDefaultConfigSection
+              deviceTypeId={typeId}
+              canEdit={permissions.canManageDeviceTypes}
+            />
+
             <ConfirmationDialog
               open={!!pendingBlePatch}
               onOpenChange={(v) => !v && setPendingBlePatch(null)}
@@ -259,7 +302,7 @@ function DeviceTypeDetailPage() {
               open={confirmMetadata}
               onOpenChange={setConfirmMetadata}
               title="Save device type metadata?"
-              description="Updated claim rules and RSSI thresholds apply to all devices of this type."
+              description="Updated settings and RSSI thresholds apply to all devices of this type."
               confirmLabel="Save metadata"
               loading={saveMetadata.isPending}
               onConfirm={() => saveMetadata.mutate()}

@@ -4,7 +4,7 @@ import type { DeviceUserLink } from "@/types/entities";
 export function revokeAccessActionLabel(link: DeviceUserLink): string {
   switch (link.LinkType) {
     case "Owner":
-      return "Release ownership";
+      return "Release Device";
     case "Shared":
       return "Revoke shared access";
     case "Installer":
@@ -43,10 +43,10 @@ export function revokeAccessCopy(
       };
     case "Owner":
       return {
-        title: "Release ownership?",
-        description: `Are you sure you want to release ${userLabel}'s ownership of ${deviceLabel}? The Owner link will be revoked.`,
-        confirmLabel: "Release ownership",
-        successToast: "Ownership released successfully.",
+        title: "Release device?",
+        description: `Releasing a device is normally done by the owner in the app. Are you sure you want to release ${deviceLabel} from ${userLabel}? The owner and all shared users will lose access, and the device can be claimed again.`,
+        confirmLabel: "Release Device",
+        successToast: "Device released successfully.",
       };
     case "Manufacturer":
       return {

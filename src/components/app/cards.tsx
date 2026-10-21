@@ -51,10 +51,12 @@ export function StatCard({
       </div>
       <div className="mt-1.5 flex items-end justify-between gap-2">
         <div className="font-display text-2xl font-semibold tabular-nums tracking-tight text-foreground">{value}</div>
-        <span className={cn("inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums", arrowTone)}>
-          <Arrow className="size-3.5" />
-          {share}%
-        </span>
+        {total !== undefined && (
+          <span className={cn("inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums", arrowTone)}>
+            <Arrow className="size-3.5" />
+            {share}%
+          </span>
+        )}
       </div>
     </div>
   );

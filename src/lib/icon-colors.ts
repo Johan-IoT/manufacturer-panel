@@ -30,6 +30,9 @@ export const statIconTone: Record<string, IconTone> = {
   "Open Support Threads": iconTone.danger,
   "Unread Notifications": iconTone.warning,
   Decommissioned: iconTone.danger,
+  Registered: iconTone.info,
+  Deactivated: iconTone.danger,
+  Claimed: iconTone.success,
 };
 
 export const statWell: Record<string, string> = {
@@ -41,6 +44,9 @@ export const statWell: Record<string, string> = {
   "Open Support Threads": "bg-[var(--tone-danger-bg)] text-destructive",
   "Unread Notifications": "bg-[var(--tone-warning-bg)] text-warning",
   Decommissioned: "bg-[var(--tone-danger-bg)] text-destructive",
+  Registered: "bg-[var(--tone-info-bg)] text-info",
+  Deactivated: "bg-[var(--tone-danger-bg)] text-destructive",
+  Claimed: "bg-[var(--tone-success-bg)] text-success",
 };
 
 export const statAccent: Record<string, string> = {
@@ -52,6 +58,9 @@ export const statAccent: Record<string, string> = {
   "Open Support Threads": "border-l-destructive",
   "Unread Notifications": "border-l-warning",
   Decommissioned: "border-l-destructive",
+  Registered: "border-l-info",
+  Deactivated: "border-l-destructive",
+  Claimed: "border-l-success",
 };
 
 export const permissionIconTone = {

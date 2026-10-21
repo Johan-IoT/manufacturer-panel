@@ -4,15 +4,20 @@ import { toast } from "sonner";
 import { authService } from "@/services";
 import {
   getAccessToken,
+  getLastRefreshFailure,
+  isBlockedAccount,
   onUnauthorized,
+  sessionEndedMessage,
   tryRefreshAccessToken,
 } from "@/services/client";
-import type { Session } from "@/types/entities";
+import type { AppUser, Session } from "@/types/entities";
 
-/** Centralized authorization. Convenience layer only — the backend is authoritative. */
+/** Centralized authorization. Convenience layer only; the backend is authoritative. */
 export interface Permissions {
   canViewDevices: boolean;
   canDeactivateDevice: boolean;
+  /** Edit stored device parameters (database only; the app writes them over BLE). */
+  canEditDeviceConfiguration: boolean;
   canManageDeviceTypes: boolean;
   canEditBleProfile: boolean;
   canManageRelationships: boolean;
@@ -27,11 +32,16 @@ interface AuthContextValue {
   permissions: Permissions;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
+  /** Why the panel signed the user out (shown on the login screen), null after a normal sign out. */
+  signOutMessage: string | null;
+  /** Refreshes the header after the signed-in user's own details change. */
+  updateSessionUser: (user: AppUser) => void;
 }
 
 const noPermissions: Permissions = {
   canViewDevices: false,
   canDeactivateDevice: false,
+  canEditDeviceConfiguration: false,
   canManageDeviceTypes: false,
   canEditBleProfile: false,
   canManageRelationships: false,
@@ -46,13 +56,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
+  const [signOutMessage, setSignOutMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    return onUnauthorized(() => {
+    return onUnauthorized((message) => {
       authService.signOut();
       setSession(null);
+      setSignOutMessage(message);
       queryClient.clear();
-      toast.error("Your session has expired. Please sign in again.");
+      // One toast even when several requests fail at the same time.
+      toast.error(message, { id: "session-ended" });
     });
   }, [queryClient]);
 
@@ -69,6 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!refreshed) {
           authService.signOut();
           if (!cancelled) {
+            const failure = getLastRefreshFailure();
+            // Only explain a blocked account; an old session just shows the login screen.
+            if (isBlockedAccount(failure)) {
+              setSignOutMessage(sessionEndedMessage(failure));
+            }
             setSession(null);
             setReady(true);
           }
@@ -87,12 +105,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const next = await authService.signIn(email, password);
+    setSignOutMessage(null);
     setSession(next);
   }, []);
 
   const signOut = useCallback(() => {
     authService.signOut();
+    setSignOutMessage(null);
     setSession(null);
+  }, []);
+
+  const updateSessionUser = useCallback((user: AppUser) => {
+    setSession((current) =>
+      current && current.user.id === user.id ? authService.updateSessionUser(current, user) : current,
+    );
   }, []);
 
   const permissions = useMemo<Permissions>(() => {
@@ -101,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {
       canViewDevices: true,
       canDeactivateDevice: isManufacturer,
+      canEditDeviceConfiguration: isManufacturer,
       canManageDeviceTypes: isManufacturer,
       canEditBleProfile: isManufacturer,
       canManageRelationships: isManufacturer,
@@ -111,8 +138,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   const value = useMemo(
-    () => ({ session, ready, permissions, signIn, signOut }),
-    [session, ready, permissions, signIn, signOut],
+    () => ({ session, ready, permissions, signIn, signOut, signOutMessage, updateSessionUser }),
+    [session, ready, permissions, signIn, signOut, signOutMessage, updateSessionUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

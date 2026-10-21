@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import jsQR from "jsqr";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,8 +44,8 @@ export function SerialQrScannerDialog({
       setError(null);
       setScanning(true);
 
-      if (!window.BarcodeDetector) {
-        setError("QR scanning is not supported in this browser. Enter the serial number manually.");
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError("Camera is not available in this browser. Enter the serial number manually.");
         setScanning(false);
         return;
       }
@@ -61,13 +62,31 @@ export function SerialQrScannerDialog({
         video.srcObject = stream;
         await video.play();
 
-        const detector = new window.BarcodeDetector({ formats: ["qr_code"] });
+        // Native BarcodeDetector where available (Chrome / Edge on Android, macOS),
+        // otherwise decode frames with jsQR so Safari and Firefox work too.
+        const detector = window.BarcodeDetector
+          ? new window.BarcodeDetector({ formats: ["qr_code"] })
+          : null;
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+
+        const decodeFrame = async (source: HTMLVideoElement): Promise<string | undefined> => {
+          if (detector) {
+            const codes = await detector.detect(source);
+            return codes.find((c) => c.rawValue)?.rawValue?.trim();
+          }
+          if (!context || source.videoWidth === 0 || source.videoHeight === 0) return undefined;
+          canvas.width = source.videoWidth;
+          canvas.height = source.videoHeight;
+          context.drawImage(source, 0, 0, canvas.width, canvas.height);
+          const image = context.getImageData(0, 0, canvas.width, canvas.height);
+          return jsQR(image.data, image.width, image.height)?.data?.trim() || undefined;
+        };
 
         const tick = async () => {
           if (cancelled || !videoRef.current) return;
           try {
-            const codes = await detector.detect(videoRef.current);
-            const value = codes.find((c) => c.rawValue)?.rawValue?.trim();
+            const value = await decodeFrame(videoRef.current);
             if (value) {
               onCapture(value);
               onOpenChange(false);

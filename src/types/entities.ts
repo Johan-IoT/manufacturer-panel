@@ -1,4 +1,4 @@
-// Domain entity types — names mirror the authoritative backend schema exactly.
+// Domain entity types: names mirror the authoritative backend schema exactly.
 
 export type AccountStatus = "Pending" | "Active" | "Suspended" | "Disabled";
 
@@ -10,10 +10,13 @@ export interface AppUser {
   LastName: string;
   Email: string;
   MobileNumber: string;
+  CompanyName: string;
   /** Global roles assigned by a Manufacturer (supports multiple). */
   globalRoles: GlobalRole[];
   IsManufacturer: boolean;
   IsInstaller: boolean;
+  /** Manufacturer rights: receive new support messages as notifications. */
+  SupportNotificationsOptIn: boolean;
   AccountStatus: AccountStatus;
   EmailVerified: boolean;
   MobileVerified: boolean;
@@ -66,7 +69,8 @@ export interface DeviceType {
   ManufacturerName: string;
   DeviceCategory: DeviceCategory;
   HardwareVersion: string;
-  ClaimAllowed: boolean;
+  /** Prefix in front of the serial on the device QR (e.g. "DK"); empty when none. */
+  QrSerialPrefix: string;
   RssiConnectMinimum: number;
   Active: boolean;
 }
@@ -94,7 +98,7 @@ export type DeviceStatus =
   | "Manufactured"
   | "Registered"
   | "Claimed"
-  | "Active"
+  | "Released"
   | "Suspended"
   | "Decommissioned";
 
@@ -102,7 +106,7 @@ export const DEVICE_STATUSES: DeviceStatus[] = [
   "Manufactured",
   "Registered",
   "Claimed",
-  "Active",
+  "Released",
   "Suspended",
   "Decommissioned",
 ];
@@ -127,6 +131,8 @@ export interface Device {
   LastBleConnectionAt: string | null;
   LastServerContactAt: string | null;
   Active: boolean;
+  /** Has an active Owner relationship. */
+  IsClaimed: boolean;
 }
 
 export type DeliveryStatus =
@@ -198,6 +204,10 @@ export interface Notification {
   ActionType: NotificationActionType;
   ActionValue: string | null;
   CreatedAt: string;
+  /** Set when the notification is about a device. */
+  DeviceSerialNumber?: string | null | undefined;
+  /** Name of the Manufacturer who sent it. */
+  SentBy?: string | null | undefined;
 }
 
 export interface UserNotification {
