@@ -235,20 +235,23 @@ function DashboardPage() {
                 ) : (
                   <ul className="space-y-3">
                     {summaryQuery.data!.recentRegistrations.map((r) => (
-                      <li key={r.serial} className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <Link
-                            to="/devices/$serial"
-                            params={{ serial: r.serial }}
-                            className="block truncate font-mono text-xs text-foreground hover:text-primary"
-                          >
-                            {r.serial}
-                          </Link>
-                          <p className="truncate text-xs text-muted-foreground">{r.name}</p>
-                        </div>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {relativeTime(r.at)}
-                        </span>
+                      <li key={r.serial}>
+                        {/* Whole row opens that device's detail page. */}
+                        <Link
+                          to="/devices/$serial"
+                          params={{ serial: r.serial }}
+                          className="group -mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-1 hover:bg-muted"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-mono text-xs text-foreground group-hover:text-primary">
+                              {r.serial}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">{r.name}</p>
+                          </div>
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            {relativeTime(r.at)}
+                          </span>
+                        </Link>
                       </li>
                     ))}
                   </ul>
@@ -272,23 +275,23 @@ function DashboardPage() {
                 ) : (
                   <ul className="space-y-3">
                     {summaryQuery.data!.recentClaims.map((c) => (
-                      <li
-                        key={`${c.serial}-${c.at}`}
-                        className="flex items-center justify-between gap-3"
-                      >
-                        <div className="min-w-0">
-                          <Link
-                            to="/devices/$serial"
-                            params={{ serial: c.serial }}
-                            className="block truncate font-mono text-xs text-foreground hover:text-primary"
-                          >
-                            {c.serial}
-                          </Link>
-                          <p className="truncate text-xs text-muted-foreground">{c.user}</p>
-                        </div>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {relativeTime(c.at)}
-                        </span>
+                      <li key={`${c.serial}-${c.at}`}>
+                        {/* Whole row opens that device's detail page. */}
+                        <Link
+                          to="/devices/$serial"
+                          params={{ serial: c.serial }}
+                          className="group -mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-1 hover:bg-muted"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate font-mono text-xs text-foreground group-hover:text-primary">
+                              {c.serial}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">{c.user}</p>
+                          </div>
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            {relativeTime(c.at)}
+                          </span>
+                        </Link>
                       </li>
                     ))}
                   </ul>
