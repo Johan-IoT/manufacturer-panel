@@ -6,6 +6,8 @@ export type GlobalRole = "Manufacturer" | "Installer";
 
 export interface AppUser {
   id: string;
+  /** AppId shown in the app and used to share a device, e.g. APP-001247. */
+  AppId: string;
   FirstName: string;
   LastName: string;
   Email: string;

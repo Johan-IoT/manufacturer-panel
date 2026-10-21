@@ -115,6 +115,14 @@ function UsersPage() {
       ),
     },
     {
+      key: "appId",
+      header: "App ID",
+      sortValue: (u) => Number(u.id) || 0,
+      render: (u) => (
+        <span className="font-mono text-xs text-foreground">{u.AppId || "-"}</span>
+      ),
+    },
+    {
       key: "mobile",
       header: "Cellphone",
       render: (u) => (
@@ -189,9 +197,10 @@ function UsersPage() {
         isLoading={query.isLoading}
         isError={query.isError}
         onRetry={() => void query.refetch()}
-        searchPlaceholder="Search by name, email or cellphone"
+        searchPlaceholder="Search by name, email, cellphone or App ID"
         searchFields={[
           (u) => `${u.FirstName} ${u.LastName}`,
+          (u) => u.AppId ?? "",
           (u) => u.Email ?? "",
           (u) => u.MobileNumber ?? "",
           (u) => digits(u.MobileNumber),

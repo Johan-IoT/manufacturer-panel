@@ -29,6 +29,14 @@ function normalizeRoles(raw: Record<string, unknown>): GlobalRole[] {
   return roles;
 }
 
+/** AppId from the server, else built from the user id the same way (APP-001247). */
+function appIdOf(source: Record<string, unknown>): string {
+  const given = String(source["AppId"] ?? source["appId"] ?? "").trim();
+  if (given) return given;
+  const id = String(source["id"] ?? "").trim();
+  return /^\d+$/.test(id) ? `APP-${id.padStart(6, "0")}` : "";
+}
+
 /** Normalizes panel and mobile login/user payloads into panel AppUser shape. */
 export function normalizeUser(raw: AppUser | Record<string, unknown>): AppUser {
   const source = raw as Record<string, unknown>;
@@ -36,6 +44,7 @@ export function normalizeUser(raw: AppUser | Record<string, unknown>): AppUser {
   const accountStatus = toPascalStatus(source["AccountStatus"] ?? source["accountStatus"]);
   return {
     id: String(source["id"] ?? ""),
+    AppId: appIdOf(source),
     FirstName: String(source["FirstName"] ?? source["firstName"] ?? ""),
     LastName: String(source["LastName"] ?? source["lastName"] ?? ""),
     Email: String(source["Email"] ?? source["email"] ?? ""),

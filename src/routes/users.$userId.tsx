@@ -219,6 +219,10 @@ function UserDetailPage() {
               <h2 className="mb-4 text-sm font-semibold">Account details</h2>
               <dl className="grid gap-3 sm:grid-cols-2">
                 <div>
+                  <dt className="text-xs text-muted-foreground">App ID</dt>
+                  <dd className="mt-0.5 font-mono text-sm">{user.AppId || "-"}</dd>
+                </div>
+                <div>
                   <dt className="text-xs text-muted-foreground">Email</dt>
                   <dd className="mt-0.5 text-sm">{user.Email}</dd>
                 </div>
