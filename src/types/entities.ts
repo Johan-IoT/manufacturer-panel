@@ -245,6 +245,9 @@ export interface SupportThread {
   LinkedDeviceSerialNumber: string | null;
   CreatedAt: string;
   LastMessageAt: string;
+  /** Name of the app user the chat belongs to. */
+  OpenedByName?: string | undefined;
+  LastMessage?: string | undefined;
 }
 
 export interface SupportMessage {
@@ -253,6 +256,11 @@ export interface SupportMessage {
   AuthorUserId: string;
   Body: string;
   SentAt: string;
+  /** "User" = the chat's app user, "Support" = a Manufacturer. */
+  SenderType?: "User" | "Support" | undefined;
+  /** Who sent it (Manufacturer name for Support messages). */
+  SenderName?: string | null | undefined;
+  SenderAppId?: string | null | undefined;
 }
 
 export interface Session {

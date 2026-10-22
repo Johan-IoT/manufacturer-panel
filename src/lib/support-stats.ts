@@ -60,7 +60,23 @@ export function groupThreadsByUser(threads: SupportThread[]): UserConversation[]
     .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
 }
 
-/** Conversation count per support state (same grouping as the Support screen). */
+/**
+ * Johan (22 Oct): every chat (header) is its own conversation, newest activity
+ * first. Same list as the app.
+ */
+export function threadConversations(threads: SupportThread[]): UserConversation[] {
+  return threads
+    .map((thread) => ({
+      userId: thread.OpenedByUserId,
+      threads: [thread],
+      primaryThreadId: thread.id,
+      lastMessageAt: thread.LastMessageAt,
+      status: supportState(thread.Status),
+    }))
+    .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+}
+
+/** Chat count per support state (same list as the Support screen). */
 export function countSupportStates(threads: SupportThread[]): Record<SupportThreadStatus, number> {
   const counts: Record<SupportThreadStatus, number> = {
     Open: 0,
@@ -68,7 +84,7 @@ export function countSupportStates(threads: SupportThread[]): Record<SupportThre
     Resolved: 0,
     Closed: 0,
   };
-  for (const conversation of groupThreadsByUser(threads)) {
+  for (const conversation of threadConversations(threads)) {
     counts[conversation.status] += 1;
   }
   return counts;

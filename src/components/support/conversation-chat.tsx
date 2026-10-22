@@ -27,12 +27,22 @@ import type { AppUser, SupportMessage, SupportThreadStatus } from "@/types/entit
 /** New messages from the app show up without reloading the page. */
 const LIVE_REFRESH_MS = 15_000;
 
-function ChatBubble({ message, fromAppUser }: { message: SupportMessage; fromAppUser: boolean }) {
+function ChatBubble({
+  message,
+  fromAppUser,
+  label,
+}: {
+  message: SupportMessage;
+  fromAppUser: boolean;
+  /** Who sent it; shown once for messages in a row from the same sender. */
+  label: string | null;
+}) {
   return (
     <div className={cn("flex w-full", fromAppUser ? "justify-start" : "justify-end")}>
       <div
         className={cn("flex max-w-[80%] flex-col gap-1", fromAppUser ? "items-start" : "items-end")}
       >
+        {label && <span className="px-1 text-xs font-medium text-muted-foreground">{label}</span>}
         <div
           className={cn(
             "whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-sm leading-relaxed",
@@ -52,8 +62,9 @@ function ChatBubble({ message, fromAppUser }: { message: SupportMessage; fromApp
 }
 
 /**
- * Support conversation as a two-way chat: the app user's messages on the left,
- * Manufacturer replies on the right. Replies go to the user's latest thread.
+ * Support chat as a two-way conversation: the app user's messages on the left,
+ * Manufacturer replies on the right, each labelled with who sent it (the
+ * Manufacturer's name and AppId, or "You"). Replies and status go to this chat.
  */
 export function ConversationChat({
   conversation,
@@ -114,6 +125,16 @@ export function ConversationChat({
     },
     onError: (e) => toast.error(toUserMessage(e, "Unable to update status. Please try again.")),
   });
+
+  /** Older servers do not send SenderType: fall back to who wrote it. */
+  const isFromAppUser = (m: SupportMessage) =>
+    m.SenderType ? m.SenderType === "User" : m.AuthorUserId === conversation.userId;
+  const senderLabel = (m: SupportMessage, fromAppUser: boolean): string => {
+    if (m.AuthorUserId === currentUserId) return "You";
+    if (fromAppUser) return appUserName;
+    const name = m.SenderName?.trim() || "Support";
+    return m.SenderAppId ? `${name} · ${m.SenderAppId}` : name;
+  };
 
   const submit = () => {
     const body = reply.trim();
@@ -184,10 +205,21 @@ export function ConversationChat({
             messages.length === 0 ? (
               <EmptyState title="No messages yet" />
             ) : (
-              messages.map((m) => {
-                const fromAppUser = m.AuthorUserId === conversation.userId;
+              messages.map((m, index) => {
+                const fromAppUser = isFromAppUser(m);
+                const sender = senderLabel(m, fromAppUser);
+                const previous = index > 0 ? messages[index - 1] : undefined;
+                const sameAsPrevious =
+                  previous !== undefined &&
+                  isFromAppUser(previous) === fromAppUser &&
+                  senderLabel(previous, fromAppUser) === sender;
                 return (
-                  <ChatBubble key={`${m.ThreadId}-${m.id}`} message={m} fromAppUser={fromAppUser} />
+                  <ChatBubble
+                    key={`${m.ThreadId}-${m.id}`}
+                    message={m}
+                    fromAppUser={fromAppUser}
+                    label={sameAsPrevious ? null : sender}
+                  />
                 );
               })
             )
@@ -234,7 +266,7 @@ export function ConversationChat({
         open={!!pendingStatus}
         onOpenChange={(v) => !v && setPendingStatus(null)}
         title="Change conversation status?"
-        description={`Update status to ${pendingStatus ?? ""} on the user's latest thread.`}
+        description={`Update the status of this chat to ${pendingStatus ?? ""}.`}
         confirmLabel="Update status"
         loading={setStatus.isPending}
         onConfirm={() => pendingStatus && setStatus.mutate(pendingStatus)}

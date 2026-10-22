@@ -565,6 +565,23 @@ export const supportService = {
       }),
     );
   },
+  /** Johan (22 Oct): a Manufacturer starts a support chat with an app user. */
+  async createThread(input: {
+    appUserId: string;
+    subject: string;
+    message: string;
+    deviceSerialNumber?: string | null;
+  }): Promise<{ threadId: string }> {
+    return (await apiFetch<{ threadId: string }>("/messages/threads", {
+      method: "POST",
+      body: JSON.stringify({
+        appUserId: input.appUserId,
+        subject: input.subject,
+        message: input.message,
+        deviceSerialNumber: input.deviceSerialNumber ?? null,
+      }),
+    })) as { threadId: string };
+  },
   async setStatus(threadId: string, status: SupportThreadStatus): Promise<SupportThread> {
     return clone(
       await unwrapData(
