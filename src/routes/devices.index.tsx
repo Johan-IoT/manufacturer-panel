@@ -162,16 +162,6 @@ function DevicesPage() {
       header: "Firmware",
       render: (d) => <span className="font-mono text-xs">{d.FirmwareVersion}</span>,
     },
-    {
-      key: "contact",
-      header: "Last Server Contact",
-      sortValue: (d) => d.LastServerContactAt ?? "",
-      render: (d) => (
-        <span className="text-xs text-muted-foreground">
-          {formatDateTime(d.LastServerContactAt)}
-        </span>
-      ),
-    },
   ];
 
   return (
