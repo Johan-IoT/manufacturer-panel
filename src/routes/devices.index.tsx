@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Archive, Eye, MoreHorizontal, Plus, ShieldOff, Undo2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Archive, Eye, MoreHorizontal, Plus, ShieldOff, Trash2, Undo2 } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/app/page-header";
 import { DataTable, type Column } from "@/components/app/data-table";
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeviceStatus, DeviceTypeBadge } from "@/components/app/badges";
-import { SideDrawer } from "@/components/app/dialogs";
+import { ConfirmationDialog, SideDrawer } from "@/components/app/dialogs";
 import { useDeviceStatusAction } from "@/components/devices/device-status-action";
-import { deviceService, deviceTypeService } from "@/services";
+import { deviceService, deviceTypeService, relationshipService, userService } from "@/services";
+import { toUserMessage } from "@/services/client";
 import {
   DEVICE_STATUSES,
+  type AppUser,
   type Device,
   type DeviceStatus as DeviceStatusValue,
 } from "@/types/entities";
@@ -65,6 +68,22 @@ function DevicesPage() {
   const permissions = usePermissions();
   const [quickView, setQuickView] = useState<Device | null>(null);
   const statusAction = useDeviceStatusAction();
+  const queryClient = useQueryClient();
+  /** Device waiting for the delete confirmation. */
+  const [deleteSerial, setDeleteSerial] = useState<string | null>(null);
+  const deleteDevice = useMutation({
+    mutationFn: (serial: string) => deviceService.remove(serial),
+    onSuccess: (_result, serial) => {
+      toast.success(`Device ${serial} deleted.`);
+      setDeleteSerial(null);
+      void queryClient.invalidateQueries({ queryKey: ["devices"] });
+      void queryClient.removeQueries({ queryKey: ["device", serial] });
+      void queryClient.invalidateQueries({ queryKey: ["links"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+    },
+    onError: (error) =>
+      toast.error(toUserMessage(error, "Unable to delete this device. Please try again.")),
+  });
 
   const devicesQuery = useQuery({ queryKey: ["devices"], queryFn: () => deviceService.list() });
   const typesQuery = useQuery({
@@ -72,7 +91,18 @@ function DevicesPage() {
     queryFn: () => deviceTypeService.list(),
   });
 
+  const usersQuery = useQuery({ queryKey: ["users"], queryFn: () => userService.list() });
+  const linksQuery = useQuery({ queryKey: ["links"], queryFn: () => relationshipService.list() });
+
   const typeOf = (id: string) => typesQuery.data?.find((t) => t.id === id);
+  /** The app user holding the active Owner link of a device, if any. */
+  const ownerOf = (serial: string): AppUser | undefined => {
+    const link = linksQuery.data?.find(
+      (l) => l.DeviceSerialNumber === serial && l.LinkType === "Owner" && l.Active,
+    );
+    return link ? usersQuery.data?.find((u) => u.id === link.AppUserId) : undefined;
+  };
+  const ownerName = (u: AppUser) => `${u.FirstName} ${u.LastName}`.trim() || u.Email;
 
   const columns: Column<Device>[] = [
     {
@@ -97,6 +127,27 @@ function DevicesPage() {
           <DeviceTypeBadge code={t.TypeCode} name={t.TypeName} />
         ) : (
           <span className="text-muted-foreground">-</span>
+        );
+      },
+    },
+    {
+      key: "owner",
+      header: "Owner",
+      sortValue: (d) => {
+        const o = ownerOf(d.SerialNumber);
+        return o ? ownerName(o).toLowerCase() : "";
+      },
+      render: (d) => {
+        const o = ownerOf(d.SerialNumber);
+        return o ? (
+          <div className="min-w-0">
+            <p className="truncate text-sm text-foreground">{ownerName(o)}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {[o.AppId, o.Email].filter(Boolean).join(" · ")}
+            </p>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">No owner</span>
         );
       },
     },
@@ -149,11 +200,15 @@ function DevicesPage() {
         isLoading={devicesQuery.isLoading || typesQuery.isLoading}
         isError={devicesQuery.isError}
         onRetry={() => void devicesQuery.refetch()}
-        searchPlaceholder="Search by serial, name or type"
+        searchPlaceholder="Search by serial, name, type or owner"
         searchFields={[
           (d) => d.SerialNumber,
           (d) => d.DeviceName,
           (d) => typeOf(d.DeviceTypeId)?.TypeName ?? "",
+          (d) => {
+            const o = ownerOf(d.SerialNumber);
+            return o ? `${ownerName(o)} ${o.AppId ?? ""} ${o.Email}` : "";
+          },
         ]}
         filters={[
           {
@@ -218,6 +273,14 @@ function DevicesPage() {
                   {DEVICE_STATUS_ACTION_COPY.decommission.menuLabel}
                 </DropdownMenuItem>
               )}
+              {permissions.canDeactivateDevice && (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onSelect={() => setDeleteSerial(d.SerialNumber)}
+                >
+                  <Trash2 className={cn("size-4", iconTone.danger)} /> Delete Device
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -234,6 +297,17 @@ function DevicesPage() {
               ["Device Name", quickView.DeviceName],
               ["Device Type", typeOf(quickView.DeviceTypeId)?.TypeName ?? "-"],
               ["Status", quickView.DeviceStatus],
+              ...(() => {
+                const o = ownerOf(quickView.SerialNumber);
+                return o
+                  ? [
+                      ["Owner", ownerName(o)],
+                      ["Owner App ID", o.AppId || "-"],
+                      ["Owner Email", o.Email || "-"],
+                      ["Owner Mobile", o.MobileNumber || "-"],
+                    ]
+                  : [["Owner", "No owner"]];
+              })(),
               ["Firmware Version", quickView.FirmwareVersion],
               ["Hardware Version", quickView.HardwareVersion],
               ["Manufactured At", formatDate(quickView.ManufacturedAt)],
@@ -265,6 +339,17 @@ function DevicesPage() {
       </SideDrawer>
 
       {statusAction.dialog}
+
+      <ConfirmationDialog
+        open={!!deleteSerial}
+        onOpenChange={(open) => !open && setDeleteSerial(null)}
+        title="Delete device permanently?"
+        description={`This permanently deletes ${deleteSerial ?? ""} and everything stored for it: relationships (owner, shared, installer, manufacturer), configuration and its history, configuration history, GPS locations and notifications about it. Support chats are kept without the device. This cannot be undone.`}
+        confirmLabel="Delete Device"
+        destructive
+        loading={deleteDevice.isPending}
+        onConfirm={() => deleteSerial && deleteDevice.mutate(deleteSerial)}
+      />
     </>
   );
 }

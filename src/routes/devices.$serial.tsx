@@ -142,6 +142,7 @@ function DeviceDetailPage() {
     const u = usersQuery.data?.find((x) => x.id === id);
     return u ? `${u.FirstName} ${u.LastName}` : "Unknown user";
   };
+  const owner = ownerLink ? usersQuery.data?.find((u) => u.id === ownerLink.AppUserId) : undefined;
 
   return (
     <>
@@ -213,6 +214,40 @@ function DeviceDetailPage() {
             <Row label="Manufactured At" value={formatDate(device.ManufacturedAt)} />
             <Row label="Registered At" value={formatDate(device.RegisteredAt)} />
             <Row label="QR Code Value" value={<span className="font-mono">{maskValue(device.QrCodeValue, 6)}</span>} />
+          </section>
+
+          <section className="rounded-lg border border-border bg-surface p-4 shadow-none">
+            <h2 className="mb-3 text-sm font-semibold">Owner</h2>
+            {ownerLink ? (
+              <>
+                <Row
+                  label="Name"
+                  value={
+                    owner ? (
+                      <Link
+                        to="/users/$userId"
+                        params={{ userId: owner.id }}
+                        className="hover:underline"
+                      >
+                        {userName(owner.id)}
+                      </Link>
+                    ) : (
+                      "Unknown user"
+                    )
+                  }
+                />
+                <Row
+                  label="App ID"
+                  value={<span className="font-mono">{owner?.AppId || "-"}</span>}
+                />
+                <Row label="Email" value={owner?.Email || "-"} />
+                <Row label="Mobile" value={owner?.MobileNumber || "-"} />
+                <Row label="Company" value={owner?.CompanyName || "-"} />
+                <Row label="Owner Since" value={formatDate(ownerLink.GrantedAt)} />
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">This device has no owner yet.</p>
+            )}
           </section>
 
           <section className="rounded-lg border border-border bg-surface p-4 shadow-none">

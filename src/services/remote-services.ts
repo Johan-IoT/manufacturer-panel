@@ -237,6 +237,10 @@ export const deviceTypeService = {
   async list(): Promise<DeviceType[]> {
     return clone(await unwrapData(await apiFetch<{ data: DeviceType[] }>("/device-types")));
   },
+  /** Deletes a device type no device uses, with its BLE profile (cannot be undone). */
+  async remove(id: string): Promise<void> {
+    await apiFetch(`/device-types/${id}`, { method: "DELETE" });
+  },
   async get(id: string): Promise<DeviceType> {
     return clone(await unwrapData(await apiFetch<{ data: DeviceType }>(`/device-types/${id}`)));
   },
@@ -390,6 +394,10 @@ export const deviceService = {
     return all.filter((d) => d.DeviceTypeId === deviceTypeId);
   },
   /** Suspend, Set to Released (reinstate) or Decommission; the server enforces the rules. */
+  /** Deletes the device and everything stored for it (cannot be undone). */
+  async remove(serialNumber: string): Promise<void> {
+    await apiFetch(`/devices/${serialNumber}`, { method: "DELETE" });
+  },
   async changeStatus(
     serialNumber: string,
     action: "suspend" | "reinstate" | "decommission",
