@@ -74,7 +74,13 @@ export function FormModal({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("border-border bg-popover", wide ? "sm:max-w-2xl" : "sm:max-w-lg")}>
+      {/* Tall forms scroll inside the dialog, so the buttons can be reached on a phone. */}
+      <DialogContent
+        className={cn(
+          "max-h-[calc(100dvh-2rem)] overflow-y-auto border-border bg-popover",
+          wide ? "sm:max-w-2xl" : "sm:max-w-lg",
+        )}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}

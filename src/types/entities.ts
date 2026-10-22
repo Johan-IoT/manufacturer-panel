@@ -208,9 +208,16 @@ export interface Notification {
   CreatedAt: string;
   /** Set when the notification is about a device. */
   DeviceSerialNumber?: string | null | undefined;
-  /** Name of the Manufacturer who sent it. */
+  /** Name of the user it is from: the Manufacturer, or the user who caused a System notification. */
   SentBy?: string | null | undefined;
+  SentByUserId?: string | null | undefined;
+  /** Manufacturer = sent by hand from the panel; System = sent by the server on an event. */
+  Source?: NotificationSource | undefined;
 }
+
+export type NotificationSource = "System" | "Manufacturer";
+
+export const NOTIFICATION_SOURCES: NotificationSource[] = ["System", "Manufacturer"];
 
 export interface UserNotification {
   id: string;

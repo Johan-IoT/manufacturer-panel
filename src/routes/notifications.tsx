@@ -27,9 +27,11 @@ import {
 import { notificationService } from "@/services";
 import { toUserMessage } from "@/services/client";
 import { formatDateTime } from "@/lib/format";
-import { notificationStats, PUSH_NOT_DELIVERED_STATUSES } from "@/lib/notification-stats";
+import { PUSH_NOT_DELIVERED_STATUSES } from "@/lib/notification-stats";
+import { useAuth } from "@/lib/auth";
 import {
   NOTIFICATION_PRIORITIES,
+  NOTIFICATION_SOURCES,
   NOTIFICATION_TYPES,
   type DeliveryStatus,
   type Notification,
@@ -110,6 +112,26 @@ function groupSentNotifications(rows: SentNotificationRow[]): NotificationCampai
     (a, b) =>
       new Date(b.notification.CreatedAt).getTime() - new Date(a.notification.CreatedAt).getTime(),
   );
+}
+
+/** Older rows sent before the source was stored count as Manufacturer. */
+function sourceOf(c: NotificationCampaign): "System" | "Manufacturer" {
+  return c.notification.Source ?? "Manufacturer";
+}
+
+/** Names of the users a notification went to. */
+function recipientNames(c: NotificationCampaign): string[] {
+  return [
+    ...new Set(
+      c.sends
+        .map((s) =>
+          s.recipient
+            ? `${s.recipient.FirstName} ${s.recipient.LastName}`.trim() || s.recipient.Email
+            : "",
+        )
+        .filter((n) => !!n),
+    ),
+  ];
 }
 
 function deliverySummary(sends: SentNotificationRow[]): {
@@ -194,17 +216,10 @@ function NotificationsPage() {
   });
   const campaigns = useMemo(() => groupSentNotifications(list.data ?? []), [list.data]);
 
-  const stats = useMemo(() => {
-    const rows = list.data ?? [];
-    // Same helper as the dashboard, so both always show the same numbers.
-    const counts = notificationStats(rows);
-    return {
-      broadcasts: campaigns.length,
-      recipients: rows.length,
-      unread: counts.unread,
-      deliveryIssues: counts.notDelivered,
-    };
-  }, [campaigns.length, list.data]);
+  const { session } = useAuth();
+  const fromName = session
+    ? `${session.user.FirstName} ${session.user.LastName}`.trim() || session.user.Email
+    : "";
 
   // A notification about a device opens that device in the app, unless an action was chosen.
   const chooseRecipients = (next: RecipientResult) => {
@@ -259,6 +274,39 @@ function NotificationsPage() {
       ),
     },
     {
+      key: "from",
+      header: "From User",
+      sortValue: (c) => (c.notification.SentBy ?? "").toLowerCase(),
+      render: (c) => (
+        <div className="min-w-0">
+          <p className="truncate text-sm text-foreground">{c.notification.SentBy || "-"}</p>
+          <p className="text-xs text-muted-foreground">{sourceOf(c)}</p>
+        </div>
+      ),
+    },
+    {
+      key: "to",
+      header: "To User",
+      sortValue: (c) => c.sends.length,
+      render: (c) => {
+        const names = recipientNames(c);
+        const read = c.sends.filter((s) => s.userNotification.IsRead).length;
+        return (
+          <div className="min-w-0 max-w-[14rem]">
+            <p className="truncate text-sm text-foreground">
+              {names[0] ?? "-"}
+              {names.length > 1 && (
+                <span className="text-muted-foreground"> +{names.length - 1} more</span>
+              )}
+            </p>
+            <p className="text-xs tabular-nums text-muted-foreground">
+              {c.sends.length} {c.sends.length === 1 ? "user" : "users"} · {read} read
+            </p>
+          </div>
+        );
+      },
+    },
+    {
       key: "type",
       header: "Type",
       sortValue: (c) => c.notification.NotificationType,
@@ -281,20 +329,6 @@ function NotificationsPage() {
         ) : (
           <span className="text-xs text-muted-foreground">-</span>
         ),
-    },
-    {
-      key: "recipients",
-      header: "Recipients",
-      sortValue: (c) => c.sends.length,
-      render: (c) => {
-        const read = c.sends.filter((s) => s.userNotification.IsRead).length;
-        return (
-          <div className="text-sm tabular-nums">
-            <span className="font-medium">{c.sends.length}</span>
-            <span className="text-muted-foreground"> · {read} read</span>
-          </div>
-        );
-      },
     },
     {
       key: "push",
@@ -331,18 +365,16 @@ function NotificationsPage() {
       header: "Sent",
       sortValue: (c) => c.notification.CreatedAt,
       className: "whitespace-nowrap text-muted-foreground text-xs",
-      render: (c) => (
-        <div>
-          <p>{formatDateTime(c.notification.CreatedAt)}</p>
-          {c.notification.SentBy && <p>by {c.notification.SentBy}</p>}
-        </div>
-      ),
+      render: (c) => <p>{formatDateTime(c.notification.CreatedAt)}</p>,
     },
   ];
 
   const senders = [
     ...new Set(campaigns.map((c) => c.notification.SentBy).filter((n): n is string => !!n)),
   ].sort();
+  const recipientsList = [...new Set(campaigns.flatMap((c) => recipientNames(c)))].sort((a, b) =>
+    a.localeCompare(b),
+  );
   const companies = [
     ...new Set(
       (list.data ?? [])
@@ -369,23 +401,6 @@ function NotificationsPage() {
           </div>
         }
       />
-
-      {!list.isLoading && !list.isError && (list.data?.length ?? 0) > 0 && (
-        <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Messages sent" value={String(stats.broadcasts)} />
-          <StatCard label="Recipient deliveries" value={String(stats.recipients)} />
-          <StatCard
-            label="Unread in app"
-            value={String(stats.unread)}
-            highlight={stats.unread > 0}
-          />
-          <StatCard
-            label="Push pending or failed"
-            value={String(stats.deliveryIssues)}
-            highlight={stats.deliveryIssues > 0}
-          />
-        </div>
-      )}
 
       <DataTable
         key={view ?? "all"}
@@ -437,10 +452,22 @@ function NotificationsPage() {
               Number(v) * 24 * 60 * 60 * 1000,
           },
           {
+            key: "source",
+            label: "Source",
+            options: NOTIFICATION_SOURCES.map((v) => ({ value: v, label: v })),
+            predicate: (c, v) => sourceOf(c) === v,
+          },
+          {
             key: "sender",
-            label: "Sent by",
+            label: "From User",
             options: senders.map((n) => ({ value: n, label: n })),
             predicate: (c, v) => c.notification.SentBy === v,
+          },
+          {
+            key: "recipient",
+            label: "To User",
+            options: recipientsList.map((n) => ({ value: n, label: n })),
+            predicate: (c, v) => recipientNames(c).includes(v),
           },
           {
             key: "company",
@@ -493,6 +520,11 @@ function NotificationsPage() {
 
       <FormModal open={open} onOpenChange={setOpen} title="Send notification" wide>
         <div className="space-y-5">
+          {/* Manufacturer notification: From is the signed-in user (Johan, 22 Oct). */}
+          <div className="text-sm">
+            <span className="text-muted-foreground">From: </span>
+            <span className="font-medium text-foreground">{fromName || "-"}</span>
+          </div>
           <RecipientPicker key={pickerKey} onChange={chooseRecipients} />
           <div className="border-t border-border pt-4">
             <NotificationMessageFields value={message} onChange={setMessage} />
@@ -524,31 +556,6 @@ function NotificationsPage() {
         onConfirm={() => send.mutate()}
       />
     </>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  highlight = false,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-surface px-4 py-3 shadow-none">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p
-        className={
-          highlight
-            ? "mt-1 text-2xl font-semibold tabular-nums text-[var(--tone-warning-fg)]"
-            : "mt-1 text-2xl font-semibold tabular-nums text-foreground"
-        }
-      >
-        {value}
-      </p>
-    </div>
   );
 }
 
@@ -585,7 +592,8 @@ function CampaignDetailSheet({
                     </Pill>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Sent {formatDateTime(campaign.notification.CreatedAt)}
+                    From {campaign.notification.SentBy || "-"} ({sourceOf(campaign)}) · Sent{" "}
+                    {formatDateTime(campaign.notification.CreatedAt)}
                   </p>
                   {action && <p className="text-xs text-muted-foreground">Tap action: {action}</p>}
                 </div>
