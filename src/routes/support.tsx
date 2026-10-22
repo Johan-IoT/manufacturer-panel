@@ -97,19 +97,10 @@ function SupportPage() {
 
   const columns: Column<UserConversation>[] = [
     {
-      key: "at",
-      header: "Date / Time",
+      // Title, last message and its date / time in one column.
+      key: "details",
+      header: "Details",
       sortValue: (c) => new Date(c.lastMessageAt).getTime(),
-      render: (c) => (
-        <span className="whitespace-nowrap text-xs text-muted-foreground">
-          {formatShortDateTime(c.lastMessageAt)}
-        </span>
-      ),
-    },
-    {
-      key: "title",
-      header: "Title",
-      sortValue: (c) => (c.threads[0]?.Subject ?? "").toLowerCase(),
       render: (c) => (
         <div className="min-w-0 max-w-xs">
           <p className="truncate text-sm text-foreground">
@@ -118,6 +109,9 @@ function SupportPage() {
           {c.threads[0]?.LastMessage && (
             <p className="truncate text-xs text-muted-foreground">{c.threads[0].LastMessage}</p>
           )}
+          <p className="mt-0.5 whitespace-nowrap text-[11px] text-muted-foreground">
+            {formatShortDateTime(c.lastMessageAt)}
+          </p>
         </div>
       ),
     },
